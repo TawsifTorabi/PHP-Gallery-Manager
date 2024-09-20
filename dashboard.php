@@ -21,6 +21,8 @@ if (!isset($_SESSION['user_id'])) {
 </head>
 
 <body>
+<!-- Fixed Top Navbar -->
+<?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <h2 class="mb-4">Welcome, <?php echo $_SESSION['username']; ?>!</h2>

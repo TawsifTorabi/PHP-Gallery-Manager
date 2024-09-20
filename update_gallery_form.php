@@ -29,6 +29,8 @@ if (!$gallery) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+<!-- Fixed Top Navbar -->
+<?php include 'navbar.php'; ?>
 
 <div class="container mt-5">
     <h2>Update Gallery</h2>

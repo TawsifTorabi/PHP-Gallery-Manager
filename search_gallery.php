@@ -26,6 +26,8 @@ $galleries = $stmt->get_result();
 </head>
 
 <body>
+<!-- Fixed Top Navbar -->
+<?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <h2>Search Results for "<?php echo htmlspecialchars($search_query); ?>"</h2>

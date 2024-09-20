@@ -9,9 +9,11 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+$gallery_id = $_GET['id'];
+
 // Fetch galleries created by the logged-in user
-$stmt = $conn->prepare("SELECT * FROM galleries WHERE created_by = ?");
-$stmt->bind_param("i", $user_id);
+$stmt = $conn->prepare("SELECT * FROM galleries WHERE created_by = ? AND id = ?");
+$stmt->bind_param("ii", $user_id, $gallery_id);
 $stmt->execute();
 $galleries = $stmt->get_result();
 ?>
@@ -28,6 +30,8 @@ $galleries = $stmt->get_result();
 </head>
 
 <body>
+<!-- Fixed Top Navbar -->
+<?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
         <h2>Your Galleries</h2>
@@ -40,7 +44,6 @@ $galleries = $stmt->get_result();
 
                     <!-- Fetch and display media for the gallery -->
                     <?php
-                    $gallery_id = $gallery['id'];
                     $stmt_media = $conn->prepare("SELECT * FROM images WHERE gallery_id = ?");
                     $stmt_media->bind_param("i", $gallery_id);
                     $stmt_media->execute();
