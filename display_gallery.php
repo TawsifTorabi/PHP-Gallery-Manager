@@ -89,26 +89,32 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     <a class="btn btn-secondary" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>">Update Gallery</a>
                     <br><br>
 
+                    <!-- Filter Dropdown -->
+                    <label for="mediaFilter" class="form-label">Filter Media:</label>
+                    <select id="mediaFilter" class="form-select mb-3" onchange="filterMedia()">
+                        <option value="all">All</option>
+                        <option value="image">Photos</option>
+                        <option value="video">Videos</option>
+                    </select>
+
                     <!-- Select All and Bulk Delete buttons -->
                     <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()">Delete Selected</button>
 
                     <!-- Select All Checkbox -->
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="selectAll" style="display: none;" onclick="selectAllImages()">
-                        <label class="form-check-label" for="selectAll">
-                            Select All
-                        </label>
+                        <label class="form-check-label" for="selectAll">Select All</label>
                     </div>
 
                     <!-- Fetch and display media for the gallery -->
-                    <div class="row">
+                    <div class="row" id="mediaContainer">
                         <?php
                         $stmt_media->execute();
                         $media_result = $stmt_media->get_result();
                         $media_files = [];
                         $i = 0;
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-12 col-sm-4 mb-3">
+                            <div class="col-12 col-sm-4 mb-3 media-item" data-type="<?php echo $media['file_type']; ?>">
                                 <input type="checkbox" class="select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                 <?php if ($media['file_type'] == 'image'): ?>
                                     <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>">
@@ -202,6 +208,20 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             xhr.send(JSON.stringify({
                 ids: selectedImages
             }));
+        }
+
+        // Filter media based on the selected option
+        function filterMedia() {
+            const filter = document.getElementById('mediaFilter').value;
+            const mediaItems = document.querySelectorAll('.media-item');
+
+            mediaItems.forEach(function(item) {
+                if (filter === 'all' || item.getAttribute('data-type') === filter) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
         }
     </script>
 </body>
