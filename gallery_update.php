@@ -17,6 +17,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->bind_param("ssii", $title, $description, $gallery_id, $_SESSION['user_id']);
     $stmt->execute();
 
+    // Initialize a counter for the number of files added
+    $files_added = 0;
+
     // Handle additional media uploads
     if (!empty($_FILES['media']['name'][0])) {
         foreach ($_FILES['media']['name'] as $key => $file_name) {
@@ -31,11 +34,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type) VALUES (?, ?, ?)");
                 $stmt->bind_param("iss", $gallery_id, $unique_file_name, $media_type);
                 $stmt->execute();
+                $files_added++; // Increment the counter for each file added
             }
         }
     }
 
+    // Generate the message based on the number of files added
+    if ($files_added > 0) {
+        $msg = "$files_added file(s) added.";
+    } else {
+        $msg = "No files added, only title and description updated.";
+    }
+
     echo "Gallery updated successfully!";
-    header("Location: display_gallery.php");
+    header("Location: display_gallery.php?id=$gallery_id&msg=true&msg_content=$msg");
 }
 ?>
