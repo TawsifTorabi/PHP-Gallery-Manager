@@ -45,15 +45,23 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
 <!DOCTYPE html>
 <html lang="en">
 
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Galleries</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
     <style>
         .gallery-img {
             cursor: pointer;
+            max-width: 10em;
+            /* max-height: 150px; */
         }
     </style>
 </head>
@@ -78,7 +86,6 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     <h5 class="card-title"><?php echo $gallery['title']; ?></h5>
                     <p class="card-text"><?php echo $gallery['description']; ?></p>
 
-                    <!-- Display image and video count, and the last updated time -->
                     <p class="text-muted">
                         <?php echo $images_count; ?> Images, <?php echo $videos_count; ?> Videos
                     </p>
@@ -86,27 +93,29 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         Last updated: <?php echo $last_updated_formatted; ?>
                     </p>
 
-                    <a class="btn btn-secondary" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>">Update Gallery</a>
-                    <br><br>
-
-                    <!-- Filter Dropdown -->
-                    <label for="mediaFilter" class="form-label">Filter Media:</label>
-                    <select id="mediaFilter" class="form-select mb-3" onchange="filterMedia()">
-                        <option value="all">All</option>
-                        <option value="image">Photos</option>
-                        <option value="video">Videos</option>
-                    </select>
-
-                    <!-- Select All and Bulk Delete buttons -->
-                    <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()">Delete Selected</button>
-
-                    <!-- Select All Checkbox -->
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="selectAll" style="display: none;" onclick="selectAllImages()">
-                        <label class="form-check-label" for="selectAll">Select All</label>
+                    <div class="row">
+                        <div class="col-4">
+                            <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()"><i class="bi bi-trash"></i></button>
+                            <div class="form-check" id="selectAllContainer" style="border-bottom: 1px solid blue; display: none;">
+                                <input class="form-check-input" type="checkbox" id="selectAll" onclick="selectAllImages()">
+                                <label class="form-check-label" for="selectAll">Select All</label>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <select id="mediaFilter" class="form-select mb-3" onchange="filterMedia()">
+                                <option value="all">Filter</option>
+                                <option value="all">All</option>
+                                <option value="image">Photos</option>
+                                <option value="video">Videos</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <a class="btn btn-secondary" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-plus-circle-fill"></i></a>
+                        </div>
                     </div>
 
-                    <!-- Fetch and display media for the gallery -->
+
+
                     <div class="row" id="mediaContainer">
                         <?php
                         $stmt_media->execute();
@@ -114,14 +123,18 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         $media_files = [];
                         $i = 0;
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-12 col-sm-4 mb-3 media-item" data-type="<?php echo $media['file_type']; ?>">
+                            <div class="col-sm-3 col-6 m-auto mb-3 media-item" data-type="<?php echo $media['file_type']; ?>">
                                 <input type="checkbox" class="select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                 <?php if ($media['file_type'] == 'image'): ?>
-                                    <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>">
+                                    <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)">
                                 <?php else: ?>
-                                    <video width="100%" controls>
-                                        <source src="uploads/<?php echo $media['file_name']; ?>" type="video/mp4">
-                                    </video>
+                                    <div class="video-container" style="position: relative; cursor: pointer;" onclick="loadVideo(this, '<?php echo $media['file_name']; ?>')">
+                                        <img src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid" alt="Video Placeholder" />
+                                        <video width="100%" controls preload="none" style="display: none;">
+                                            <source src="" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         <?php $i++;
@@ -131,99 +144,219 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             </div>
         <?php endwhile; ?>
 
-    </div>
 
-    <!-- Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+        <style>
+            .container1 {
+                display: flex;
+                justify-content: center;
+                /* Centers horizontally */
+                align-items: center;
+                /* Centers vertically */
+                height: 90vh;
+                /* Full height of the viewport */
+            }
 
-    <script>
-        let selectedImages = [];
+            .centered1 {
+                /* width: 50%; */
+                /* Adjust as needed */
+                /* height: 50%; */
+                /* Adjust as needed */
+                background-color: lightblue;
+            }
+        </style>
 
-        // Track selected checkboxes
-        document.querySelectorAll('.select-checkbox').forEach(function(checkbox) {
-            checkbox.addEventListener('change', function() {
-                const imageId = this.getAttribute('data-id');
-                if (this.checked) {
-                    selectedImages.push(imageId);
+
+        <!-- Lightbox Modal -->
+        <div class="modal fade" id="lightboxModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Media Viewer</h5>
+                        <button type="button" class="close" onclick="hideLightbox()" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body container1">
+                        <div id="mediaCarousel" class="carousel slide" data-ride="carousel">
+                            <div class="carousel-inner">
+                                <div class="carousel-item active">
+                                    <img id="lightboxImage" class="d-block w-100 centered1" src="" alt="Media">
+                                </div>
+                                <div class="carousel-item">
+                                    <video class="d-block w-100" controls>
+                                        <source src="" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            </div>
+                            <a class="carousel-control-prev" href="#mediaCarousel" role="button" data-slide="prev" onclick="changeImage(-1)">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                            <a class="carousel-control-next" href="#mediaCarousel" role="button" data-slide="next" onclick="changeImage(1)">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap JS and Popper.js -->
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+        
+        <script>
+            function hideLightbox() {
+                const modal = document.getElementById('lightboxModal');
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.hide();
+            }
+        </script>
+
+        <script>
+            let currentIndex = 0;
+            const mediaFiles = <?php echo json_encode($media_files); ?>;
+
+            function openLightbox(filetype, fileName, index) {
+                currentIndex = index;
+                const lightboxImage = document.getElementById('lightboxImage');
+                if (filetype === 'image') {
+                    lightboxImage.src = 'serve_image.php?file=' + fileName; // Set the source for the lightbox image
                 } else {
-                    selectedImages = selectedImages.filter(id => id !== imageId);
+                    lightboxImage.src = 'video_placeholder.php?file_name=' + fileName; // Set the source for the lightbox image
                 }
+                // $('#lightboxModal').modal('show'); // Show the modal
+                // Assuming your modal has the ID 'myModal'
+                var myModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+                myModal.hide();
+            }
+
+            function changeImage(direction) {
+                currentIndex += direction;
+                if (currentIndex < 0) {
+                    currentIndex = mediaFiles.length - 1; // Wrap to last image
+                } else if (currentIndex >= mediaFiles.length) {
+                    currentIndex = 0; // Wrap to first image
+                }
+                const nextFileName = mediaFiles[currentIndex].file_name;
+
+                if (mediaFiles[currentIndex].file_type == 'image') {
+                    document.getElementById('lightboxImage').src = 'serve_image.php?file=' + encodeURIComponent(nextFileName);
+                } else {
+                    document.getElementById('lightboxImage').src = 'video_placeholder.php?file_name=' + +encodeURIComponent(nextFileName); // Set the source for the lightbox image
+                }
+            }
+
+
+            function loadVideo(videoContainer, fileName) {
+                // Get the video element
+                const videoElement = videoContainer.querySelector('video');
+                const sourceElement = videoElement.querySelector('source');
+
+                // Set the video source
+                sourceElement.src = 'uploads/' + encodeURIComponent(fileName);
+
+                // Load the video
+                videoElement.load();
+
+                // Show the video and hide the placeholder image
+                videoContainer.querySelector('img').style.display = 'none';
+                videoElement.style.display = 'block';
+
+                // Play the video
+                videoElement.play();
+            }
+
+            let selectedImages = [];
+
+            // Track selected checkboxes
+            document.querySelectorAll('.select-checkbox').forEach(function(checkbox) {
+                checkbox.addEventListener('change', function() {
+                    const imageId = this.getAttribute('data-id');
+                    if (this.checked) {
+                        selectedImages.push(imageId);
+                    } else {
+                        selectedImages = selectedImages.filter(id => id !== imageId);
+                    }
+                    toggleDeleteButton();
+                    toggleSelectAllCheckbox();
+                });
+            });
+
+            // Toggle 'Delete Selected' and 'Select All' button visibility
+            function toggleDeleteButton() {
+                const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+                if (selectedImages.length > 0) {
+                    deleteSelectedBtn.style.display = 'inline-block';
+                } else {
+                    deleteSelectedBtn.style.display = 'none';
+                }
+            }
+
+            function toggleSelectAllCheckbox() {
+                const selectAll = document.getElementById('selectAllContainer');
+                if (selectedImages.length > 0) {
+                    selectAll.style.display = 'inline-block';
+                } else {
+                    selectAll.style.display = 'none';
+                }
+            }
+
+            // Select all images
+            function selectAllImages() {
+                const selectAll = document.getElementById('selectAll');
+                const checkboxes = document.querySelectorAll('.select-checkbox');
+                selectedImages = [];
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = selectAll.checked;
+                    if (selectAll.checked) {
+                        selectedImages.push(checkbox.getAttribute('data-id'));
+                    }
+                });
                 toggleDeleteButton();
-                toggleSelectAllCheckbox();
-            });
-        });
-
-        // Toggle 'Delete Selected' and 'Select All' button visibility
-        function toggleDeleteButton() {
-            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-            if (selectedImages.length > 0) {
-                deleteSelectedBtn.style.display = 'inline-block';
-            } else {
-                deleteSelectedBtn.style.display = 'none';
-            }
-        }
-
-        function toggleSelectAllCheckbox() {
-            const selectAll = document.getElementById('selectAll');
-            if (selectedImages.length > 0) {
-                selectAll.style.display = 'inline-block';
-            } else {
-                selectAll.style.display = 'none';
-            }
-        }
-
-        // Select all images
-        function selectAllImages() {
-            const selectAll = document.getElementById('selectAll');
-            const checkboxes = document.querySelectorAll('.select-checkbox');
-            selectedImages = [];
-            checkboxes.forEach(function(checkbox) {
-                checkbox.checked = selectAll.checked;
-                if (selectAll.checked) {
-                    selectedImages.push(checkbox.getAttribute('data-id'));
-                }
-            });
-            toggleDeleteButton();
-        }
-
-        // Delete selected images
-        function deleteSelected() {
-            if (!confirm('Are you sure you want to delete the selected images?')) {
-                return;
             }
 
-            // Send the selected image IDs to the server for deletion
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', 'delete_images.php', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    alert('Selected images deleted successfully.');
-                    location.reload(); // Reload the page to reflect changes
-                } else {
-                    alert('Error deleting images. Please try again.');
+            // Delete selected images
+            function deleteSelected() {
+                if (!confirm('Are you sure you want to delete the selected images?')) {
+                    return;
                 }
-            };
-            xhr.send(JSON.stringify({
-                ids: selectedImages
-            }));
-        }
 
-        // Filter media based on the selected option
-        function filterMedia() {
-            const filter = document.getElementById('mediaFilter').value;
-            const mediaItems = document.querySelectorAll('.media-item');
+                // Send the selected image IDs to the server for deletion
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'delete_images.php', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        alert('Selected images deleted successfully.');
+                        location.reload(); // Reload the page to reflect changes
+                    } else {
+                        alert('Error deleting images. Please try again.');
+                    }
+                };
+                xhr.send(JSON.stringify({
+                    ids: selectedImages
+                }));
+            }
 
-            mediaItems.forEach(function(item) {
-                if (filter === 'all' || item.getAttribute('data-type') === filter) {
-                    item.style.display = 'block';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-    </script>
+            // Filter media based on the selected option
+            function filterMedia() {
+                const filter = document.getElementById('mediaFilter').value;
+                const mediaItems = document.querySelectorAll('.media-item');
+
+                mediaItems.forEach(function(item) {
+                    if (filter === 'all' || item.getAttribute('data-type') === filter) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            }
+        </script>
+
+
 </body>
 
 </html>
