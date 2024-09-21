@@ -10,29 +10,26 @@ if (isset($_GET['file_name'])) {
 
     // Check if the video file exists
     if (file_exists($video_path)) {
-        // Generate a placeholder (thumbnail) for the video
-        // You might want to use a library like FFmpeg to generate thumbnails.
-        // For this example, let's create a simple placeholder image.
+        // Define the thumbnail path
+        $thumbnail_path = 'thumbnails/' . pathinfo($file_name, PATHINFO_FILENAME) . '.png';
 
-        // Create a blank image
-        $width = 320;  // Width of the placeholder
-        $height = 180; // Height of the placeholder
-        $image = imagecreatetruecolor($width, $height);
+        // Generate the thumbnail if it doesn't already exist
+        if (!file_exists($thumbnail_path)) {
+            // Create the thumbnails directory if it doesn't exist
+            if (!is_dir('thumbnails')) {
+                mkdir('thumbnails', 0755, true);
+            }
 
-        // Fill the image with a color (light grey)
-        $bg_color = imagecolorallocate($image, 220, 220, 220);
-        imagefill($image, 0, 0, $bg_color);
-
-        // Add a play button (optional)
-        $play_color = imagecolorallocate($image, 0, 0, 0); // Black color for the play button
-        imagefilledpolygon($image, [160, 90, 140, 120, 160, 110], 3, $play_color); // Play triangle
+            // Use FFmpeg to create a thumbnail
+            $cmd = "ffmpeg -i " . escapeshellarg($video_path) . " -ss 00:00:01.000 -vframes 1 " . escapeshellarg($thumbnail_path);
+            exec($cmd);
+        }
 
         // Set the content type header for the image
         header('Content-Type: image/png');
 
-        // Output the image
-        imagepng($image);
-        imagedestroy($image);
+        // Output the thumbnail
+        readfile($thumbnail_path);
     } else {
         // Handle the case where the video does not exist
         header('HTTP/1.0 404 Not Found');
