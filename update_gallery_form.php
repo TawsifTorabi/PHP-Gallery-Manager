@@ -4,6 +4,7 @@ require 'db.php';
 
 if (!isset($_SESSION['user_id'])) {
     die("You must be logged in to update a gallery.");
+    header('Location: index.php');
 }
 
 $gallery_id = $_GET['id']; // Gallery ID from URL

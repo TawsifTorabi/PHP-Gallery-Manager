@@ -1,8 +1,9 @@
 <?php
-session_start();
+include 'session.php';
 require 'db.php';
 if (!isset($_SESSION['user_id'])) {
     die("You must be logged in to search galleries.");
+    header('Location: index.php');
 }
 
 $search_query = $_GET['query'];

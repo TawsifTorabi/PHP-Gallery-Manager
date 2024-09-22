@@ -1,5 +1,5 @@
 <?php
-session_start();
+include 'session.php';
 require 'db.php'; // Include your database connection file
 
 // Ensure the user is logged in

@@ -1,5 +1,5 @@
 <?php
-session_start();
+include 'session.php';
 require 'db.php';
 
 if (!isset($_SESSION['user_id'])) {

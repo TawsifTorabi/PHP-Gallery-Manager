@@ -1,5 +1,5 @@
 <?php
-session_start();
+include 'session.php';
 require 'db.php';
 date_default_timezone_set('Asia/Dhaka');
 
