@@ -110,7 +110,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                             </select>
                         </div>
                         <div class="col-4">
-                            <a class="btn btn-secondary" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-plus-circle-fill"></i></a>
+                            <a class="btn btn-primary ml-2" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-plus-circle-fill"></i></a>
+                            <a class="btn btn-primary ml-2" href="hero_images.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-border-all"></i></a>
                         </div>
                     </div>
 

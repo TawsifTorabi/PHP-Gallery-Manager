@@ -7,3 +7,8 @@ ini_set('session.gc_maxlifetime', 604800);
 session_set_cookie_params(604800);
 
 session_start();
+
+// Ensure the user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php');
+}
