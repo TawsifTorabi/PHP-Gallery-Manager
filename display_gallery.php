@@ -71,8 +71,6 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
-        <h2>Your Galleries</h2>
-
         <!-- Display the message from the GET parameter -->
         <?php if ($message): ?>
             <div class="alert alert-info">
@@ -83,7 +81,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <?php while ($gallery = $galleries->fetch_assoc()): ?>
             <div class="card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title"><?php echo $gallery['title']; ?></h5>
+                    <h2 class="card-title"><?php echo $gallery['title']; ?></h2>
                     <p class="card-text"><?php echo $gallery['description']; ?></p>
 
                     <p class="text-muted">
@@ -173,9 +171,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Media Viewer</h5>
-                        <button type="button" class="close" onclick="hideLightbox()" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" onclick="hideLightbox()" aria-label="Close"></button>
                     </div>
                     <div class="modal-body container1">
                         <div id="mediaCarousel" class="carousel slide" data-ride="carousel">
@@ -207,31 +203,29 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <!-- Bootstrap JS and Popper.js -->
         <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-        
-        <script>
-            function hideLightbox() {
-                const modal = document.getElementById('lightboxModal');
-                const bootstrapModal = new bootstrap.Modal(modal);
-                bootstrapModal.hide();
-            }
-        </script>
 
         <script>
+            const myModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
+          
+            function hideLightbox() {
+                const bootstrapModal = myModal;
+                bootstrapModal.hide(); // This will hide the modal
+            }
+
             let currentIndex = 0;
             const mediaFiles = <?php echo json_encode($media_files); ?>;
 
             function openLightbox(filetype, fileName, index) {
                 currentIndex = index;
                 const lightboxImage = document.getElementById('lightboxImage');
+
                 if (filetype === 'image') {
-                    lightboxImage.src = 'serve_image.php?file=' + fileName; // Set the source for the lightbox image
+                    lightboxImage.src = 'serve_image.php?file=' + fileName;
                 } else {
-                    lightboxImage.src = 'video_placeholder.php?file_name=' + fileName; // Set the source for the lightbox image
+                    // Video handling logic can go here if needed
                 }
-                // $('#lightboxModal').modal('show'); // Show the modal
-                // Assuming your modal has the ID 'myModal'
-                var myModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
-                myModal.hide();
+
+                myModal.show(); // Use this to show the modal
             }
 
             function changeImage(direction) {

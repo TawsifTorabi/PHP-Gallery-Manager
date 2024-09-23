@@ -49,6 +49,7 @@ $hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_ima
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,6 +62,7 @@ $hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_ima
             cursor: pointer;
             max-width: 10em;
         }
+
         .modal-dialog-scrollable {
             max-height: 90%;
         }
@@ -97,6 +99,7 @@ $hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_ima
                     <h5>Hero Images</h5>
                     <p>Select up to 4 images as hero images.</p>
                     <form id="heroImageForm" method="post" action="set_hero_images.php">
+                        <button type="submit" class="btn btn-primary mb-4">Set Hero Images</button>
                         <input type="hidden" name="gallery_id" value="<?php echo $gallery_id; ?>">
                         <div class="row">
                             <?php
@@ -106,22 +109,23 @@ $hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_ima
                                 if ($media['file_type'] == 'image'):
                                     $is_selected = in_array($media['file_name'], $hero_images);
                             ?>
-                            <div class="col-sm-3 col-6 mb-3">
-                                <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image">
-                                <div class="form-check">
-                                    <input class="form-check-input hero-checkbox" type="checkbox" name="hero_images[]" value="<?php echo $media['file_name']; ?>" <?php echo $is_selected ? 'checked' : ''; ?>>
-                                    <label class="form-check-label">
-                                        Select as Hero
-                                    </label>
-                                </div>
-                            </div>
-                            <?php endif; endwhile; ?>
+                                    <div class="col-sm-3 col-6 mb-3">
+                                        <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image">
+                                        <div class="form-check">
+                                            <input class="form-check-input hero-checkbox" type="checkbox" name="hero_images[]" value="<?php echo $media['file_name']; ?>" <?php echo $is_selected ? 'checked' : ''; ?>>
+                                            <label class="form-check-label">
+                                                Select as Hero
+                                            </label>
+                                        </div>
+                                    </div>
+                            <?php endif;
+                            endwhile; ?>
                         </div>
-                        <button type="submit" class="btn btn-primary">Set Hero Images</button>
+
                     </form>
                 </div>
 
-               
+
             </div>
         </div>
     </div>
@@ -141,4 +145,5 @@ $hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_ima
     </script>
 
 </body>
+
 </html>
