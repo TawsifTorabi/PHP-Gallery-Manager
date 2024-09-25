@@ -16,7 +16,7 @@ $start_from = ($page - 1) * $records_per_page;
 $search_query = isset($_GET['query']) ? $_GET['query'] : '';
 
 // Prepare the query with LIMIT for pagination
-$stmt = $conn->prepare("SELECT * FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ? LIMIT ?, ?");
+$stmt = $conn->prepare("SELECT * FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ? ORDER BY id DESC LIMIT ?, ?");
 $search_like = "%" . $search_query . "%";
 $stmt->bind_param("ssiii", $search_like, $search_like, $_SESSION['user_id'], $start_from, $records_per_page);
 $stmt->execute();
@@ -76,6 +76,42 @@ $total_pages = ceil($total_galleries / $records_per_page);
                 <button class="btn btn-outline-secondary" type="submit">Search</button>
             </div>
         </form>
+
+        <br>
+
+        <!-- Pagination Controls -->
+        <nav aria-label="Gallery pagination">
+            <ul class="pagination justify-content-center flex-wrap">
+                <!-- Previous Page Link -->
+                <?php if ($page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="search_gallery.php?query=<?php echo urlencode($search_query); ?>&page=<?php echo $page - 1; ?>">Previous</a>
+                    </li>
+                <?php else: ?>
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                <?php endif; ?>
+
+                <!-- Page Numbers -->
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?php echo ($i == $page) ? 'active' : ''; ?>">
+                        <a class="page-link" href="search_gallery.php?query=<?php echo urlencode($search_query); ?>&page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+
+                <!-- Next Page Link -->
+                <?php if ($page < $total_pages): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="search_gallery.php?query=<?php echo urlencode($search_query); ?>&page=<?php echo $page + 1; ?>">Next</a>
+                    </li>
+                <?php else: ?>
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </nav>
 
         <?php while ($gallery = $galleries->fetch_assoc()): ?>
             <div class="card mb-4">
