@@ -20,7 +20,11 @@ $current_page = basename($_SERVER['PHP_SELF']);
       <ul class="navbar-nav ms-auto">
         <?php foreach ($menu_items as $file => $title) : ?>
           <li class="nav-item">
-            <a class="nav-link <?php echo ($current_page == $file) ? 'active' : ''; ?>" href="<?php echo $file; ?>">
+            <a 
+              class="nav-link <?php echo ($current_page == $file) ? 'active' : ''; ?>"
+              href="<?php echo $file; ?>"
+              <?php if ($file === 'logout.php') echo 'onclick="return confirm(\'Are you sure you want to logout?\');"'; ?>
+            >
               <?php echo $title; ?>
             </a>
           </li>

@@ -54,6 +54,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
     <title>Your Galleries</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
@@ -81,6 +82,16 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <?php while ($gallery = $galleries->fetch_assoc()): ?>
             <div class="card mb-4">
                 <div class="card-body">
+                    <div class="dropdown ms-auto" style="float: right;">
+                    <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <span class="dropdown-item">
+                                    <a class="btn btn-danger ml-2" href="delete_gallery.php?gallery_id=<?php echo $gallery['id']; ?>"><i class="bi bi-trash"></i> Delete</a>
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
                     <h2 class="card-title"><?php echo $gallery['title']; ?></h2>
                     <p class="card-text"><?php echo $gallery['description']; ?></p>
 
@@ -206,7 +217,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
 
         <script>
             const myModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
-          
+
             function hideLightbox() {
                 const bootstrapModal = myModal;
                 bootstrapModal.hide(); // This will hide the modal
