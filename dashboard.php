@@ -28,6 +28,74 @@ $stmt->bind_param("iii", $_SESSION['user_id'], $offset, $items_per_page);
 $stmt->execute();
 $result = $stmt->get_result();
 $galleries = $result->fetch_all(MYSQLI_ASSOC);
+
+
+
+// Function to calculate the size of a folder
+function folderSize($dir)
+{
+    $totalSize = 0;
+
+    // Open the directory
+    $files = scandir($dir);
+
+    // Loop through all files
+    foreach ($files as $file) {
+        if ($file !== "." && $file !== "..") {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+
+            // If it's a directory, recursively calculate the size
+            if (is_dir($path)) {
+                $totalSize += folderSize($path);
+            } else {
+                // If it's a file, add the file size
+                $totalSize += filesize($path);
+            }
+        }
+    }
+
+    return $totalSize;
+}
+
+// Function to convert bytes to a human-readable format
+function formatSize($size)
+{
+    $units = array('B', 'KB', 'MB', 'GB', 'TB');
+    $unitIndex = 0;
+
+    while ($size >= 1024 && $unitIndex < count($units) - 1) {
+        $size /= 1024;
+        $unitIndex++;
+    }
+
+    return round($size, 2) . ' ' . $units[$unitIndex];
+}
+
+// Folder path (change to the folder you want to check)
+$folderPath = 'uploads'; // Example: '/var/www/html/myfolder'
+
+// Calculate folder size
+$size = folderSize($folderPath);
+
+// Get total disk space and free space for the partition the folder resides in
+$diskTotalSpace = disk_total_space($folderPath);
+$diskFreeSpace = disk_free_space($folderPath);
+
+// Calculate used space on the disk
+$diskUsedSpace = $diskTotalSpace - $diskFreeSpace;
+
+// Output the folder size and disk space information
+$folderSize = formatSize($size);
+$totalDiskSpace = formatSize($diskTotalSpace);
+$freeDiskSpace = formatSize($diskFreeSpace);
+$usedDiskSpace = formatSize($diskUsedSpace);
+
+// Calculate percentage of space used
+$usagePercentage = ($size / $diskFreeSpace) * 100;
+
+
+?>
+
 ?>
 
 <!DOCTYPE html>
@@ -49,8 +117,19 @@ $galleries = $result->fetch_all(MYSQLI_ASSOC);
     <div class="container mt-5">
         <h2 class="mb-4">Welcome, <?php echo $_SESSION['username']; ?>!</h2>
         <p>You are logged in. This is your dashboard.</p>
-        <a href="gallery_form.php" class="btn btn-primary">Create New Gallery</a>
-        <a href="logout.php" class="btn btn-danger" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
+        <div class="row">
+            <div class="col-6">
+                Storage Usage: <?= $folderSize; ?> / <?= $freeDiskSpace; ?> (<?= round($usagePercentage, 2); ?>%)
+                <!-- Bootstrap Progress Bar -->
+                <div class="progress">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: <?= $usagePercentage; ?>%;" aria-valuenow="<?= $usagePercentage; ?>" aria-valuemin="0" aria-valuemax="100"><?= round($usagePercentage, 2); ?>%</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <a href="gallery_form.php" class="btn btn-primary">Create New Gallery</a>
+                <a href="logout.php" class="btn btn-danger" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
+            </div>
+        </div>
         <form action="search_gallery.php" method="get" class="mt-2">
             <div class="input-group mb-3">
                 <input type="text" class="form-control" name="query" placeholder="Search for galleries" required>
