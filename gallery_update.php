@@ -20,22 +20,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Initialize a counter for the number of files added
     $files_added = 0;
 
-    // Handle additional media uploads
-    if (!empty($_FILES['media']['name'][0])) {
-        foreach ($_FILES['media']['name'] as $key => $file_name) {
-            $file_tmp = $_FILES['media']['tmp_name'][$key];
-            $file_type = mime_content_type($file_tmp);
+    // Handle media uploads
+    foreach ($_FILES['media']['name'] as $key => $file_name) {
+        $file_tmp = $_FILES['media']['tmp_name'][$key];
+        $file_type = mime_content_type($file_tmp);
 
-            $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
-            $unique_file_name = uniqid() . '-' . basename($file_name);
-            $upload_dir = 'uploads/';
+        // Check if the file is an image or video
+        $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
 
-            if (move_uploaded_file($file_tmp, $upload_dir . $unique_file_name)) {
-                $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type) VALUES (?, ?, ?)");
-                $stmt->bind_param("iss", $gallery_id, $unique_file_name, $media_type);
-                $stmt->execute();
-                $files_added++; // Increment the counter for each file added
-            }
+        // Generate a unique file name using uniqid and timestamp
+        $file_ext = pathinfo($file_name, PATHINFO_EXTENSION); // Get the file extension
+        $unique_file_name = uniqid() . '-' . time() . '.' . $file_ext; // Append timestamp and extension
+        $upload_dir = 'uploads/';
+
+        if (move_uploaded_file($file_tmp, $upload_dir . $unique_file_name)) {
+            // Insert the uploaded file details into the `images` table
+            $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $gallery_id, $unique_file_name, $media_type);
+            $stmt->execute();
+        } else {
+            echo "Failed to upload file: " . $file_name;
         }
     }
 
@@ -49,4 +53,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo "Gallery updated successfully!";
     header("Location: display_gallery.php?id=$gallery_id&msg=true&msg_content=$msg");
 }
-?>

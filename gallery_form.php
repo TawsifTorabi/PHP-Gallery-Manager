@@ -26,8 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Check if the file is an image or video
         $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
 
-        // Generate a unique file name
-        $unique_file_name = uniqid() . '-' . basename($file_name);
+        // Generate a unique file name using uniqid and timestamp
+        $file_ext = pathinfo($file_name, PATHINFO_EXTENSION); // Get the file extension
+        $unique_file_name = uniqid() . '-' . time() . '.' . $file_ext; // Append timestamp and extension
         $upload_dir = 'uploads/';
 
         if (move_uploaded_file($file_tmp, $upload_dir . $unique_file_name)) {
@@ -39,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "Failed to upload file: " . $file_name;
         }
     }
+
 
     echo "Gallery created successfully!";
     header("Location: dashboard.php"); // Redirect to dashboard after creation

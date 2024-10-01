@@ -124,9 +124,9 @@ $total_pages = ceil($total_galleries / $records_per_page);
                         <div class="mb-2">
                             <div class="hero-images">
                                 <?php
-                                $hero_images = explode(',', $gallery['hero_images']);
+                                $hero_images = explode('$%@!', $gallery['hero_images']);
                                 foreach ($hero_images as $image): ?>
-                                    <img src="serve_image.php?w=180&file=<?php echo urlencode($image); ?>" alt="Hero Image">
+                                    <img src="serve_image.php?w=180&file=<?php echo rawurlencode($image); ?>" alt="Hero Image">
                                 <?php endforeach; ?>
                             </div>
                         </div>
