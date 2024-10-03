@@ -13,7 +13,7 @@ $file_name = basename($_GET['file']);
 $file_path = $upload_dir . $file_name;
 
 // Validate image width, default to 350
-$width = 350;
+$width = 500;
 if (isset($_GET['w']) && filter_var($_GET['w'], FILTER_VALIDATE_INT)) {
     $requested_width = intval($_GET['w']);
     if ($requested_width < 1000 && $requested_width > 0) {

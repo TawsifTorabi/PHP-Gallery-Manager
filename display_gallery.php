@@ -83,7 +83,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="dropdown ms-auto" style="float: right;">
-                    <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                        <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
                         <ul class="dropdown-menu">
                             <li>
                                 <span class="dropdown-item">
@@ -157,13 +157,13 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
 
         <style>
             .container1 {
-                display: flex;
-                justify-content: center;
-                /* Centers horizontally */
-                align-items: center;
-                /* Centers vertically */
-                height: 90vh;
-                /* Full height of the viewport */
+                /* display: flex; */
+                /* justify-content: space-between; */
+                /* align-items: center; */
+                height: 74vh;
+                flex-wrap: nowrap;
+                align-content: center;
+                overflow: hidden;
             }
 
             .centered1 {
@@ -188,7 +188,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         <div id="mediaCarousel" class="carousel slide" data-ride="carousel">
                             <div class="carousel-inner">
                                 <div class="carousel-item active">
-                                    <img id="lightboxImage" class="d-block w-100 centered1" src="" alt="Media">
+                                    <img id="lightboxImage" class="d-block w-100 centered1" style="max-width: 95%;" src="" alt="Media">
                                 </div>
                                 <div class="carousel-item">
                                     <video class="d-block w-100" controls>
@@ -231,7 +231,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                 const lightboxImage = document.getElementById('lightboxImage');
 
                 if (filetype === 'image') {
-                    lightboxImage.src = 'serve_image.php?file=' + fileName;
+                    lightboxImage.src = 'serve_image.php?file=' + fileName + '&w=700';
                 } else {
                     // Video handling logic can go here if needed
                 }
