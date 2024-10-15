@@ -187,8 +187,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     <div class="modal-body container1">
                         <div id="mediaCarousel" class="carousel slide" data-ride="carousel">
                             <div class="carousel-inner">
-                                <div class="carousel-item active">
-                                    <img id="lightboxImage" class="d-block w-100 centered1" style="max-width: 95%;" src="" alt="Media">
+                                <div class="carousel-item active d-flex justify-content-center">
+                                    <img id="lightboxImage" class="d-block w-100 centered1" style="max-height: 41rem;" src="" alt="Media">
                                 </div>
                                 <div class="carousel-item">
                                     <video class="d-block w-100" controls>
