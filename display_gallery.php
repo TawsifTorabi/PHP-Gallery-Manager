@@ -64,6 +64,26 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             max-width: 10em;
             /* max-height: 150px; */
         }
+
+        .customDropdown {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            background: white;
+            width: 23px;
+            display: flex;
+            justify-content: center;
+            border-radius: 5px;
+            font-size: 20px;
+        }
+
+        .customCheckbox {
+            margin-right: 10px;
+            position: absolute;
+            transform: scale(1.9);
+            top: 12px;
+            left: 13px;
+        }
     </style>
 </head>
 
@@ -121,6 +141,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         <div class="col-4">
                             <a class="btn btn-primary ml-2" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-plus-circle-fill"></i></a>
                             <a class="btn btn-primary ml-2" href="hero_images.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-border-all"></i></a>
+                            <a class="btn btn-primary ml-2" href="image_from_video.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-image"></i></a>
                         </div>
                     </div>
 
@@ -133,17 +154,26 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         $media_files = [];
                         $i = 0;
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-sm-3 col-6 m-auto mb-3 media-item" data-type="<?php echo $media['file_type']; ?>">
-                                <input type="checkbox" class="select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
+                            <div class="col-sm-3 col-6 m-auto mb-3 media-item" style="position: relative;" data-type="<?php echo $media['file_type']; ?>">
                                 <?php if ($media['file_type'] == 'image'): ?>
+                                    <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                     <img src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)">
                                 <?php else: ?>
-                                    <div class="video-container" style="position: relative; cursor: pointer;" onclick="loadVideo(this, '<?php echo $media['file_name']; ?>')">
-                                        <img src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid" alt="Video Placeholder" />
+                                    <div class="video-container" style="position: relative; cursor: pointer;">
+                                        <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
+                                        <img onclick="loadVideo(this, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid" alt="Video Placeholder" />
                                         <video width="100%" controls preload="none" style="display: none;">
                                             <source src="" type="video/mp4">
                                             Your browser does not support the video tag.
                                         </video>
+
+                                        <!-- Dropdown for video options -->
+                                        <div class="dropdown mt-2 customDropdown">
+                                            <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;"></i>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="generate_images.php?video_id=<?php echo $media['id']; ?>">Generate Images</a></li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -188,7 +218,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         <div id="mediaCarousel" class="carousel slide" data-ride="carousel">
                             <div class="carousel-inner">
                                 <div class="carousel-item active d-flex justify-content-center">
-                                    <img id="lightboxImage" class="d-block w-100 centered1" style="max-height: 41rem;" src="" alt="Media">
+                                    <img id="lightboxImage" class="d-block centered1" style="max-height: 41rem;" src="" alt="Media">
                                 </div>
                                 <div class="carousel-item">
                                     <video class="d-block w-100" controls>
