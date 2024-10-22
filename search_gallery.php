@@ -48,17 +48,14 @@ $total_pages = ceil($total_galleries / $records_per_page);
             overflow: hidden;
             border: 1px solid #ddd;
             border-radius: 5px;
-            height: 150px;
-            /* Set height to keep uniform shape */
+            height: 18rem;
         }
 
         .hero-images img {
             width: 25%;
-            /* Four images per row */
             height: auto;
-            /* Maintain aspect ratio */
             object-fit: cover;
-            /* Ensure images cover the box */
+            object-position: center;
         }
     </style>
 </head>
@@ -114,10 +111,41 @@ $total_pages = ceil($total_galleries / $records_per_page);
         </nav>
 
         <?php while ($gallery = $galleries->fetch_assoc()): ?>
-            <div class="card mb-4">
+            <?php
+            // Fetch the number of images and videos, and the last updated time for the gallery
+            $stmt_media = $conn->prepare("SELECT file_type, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
+            $stmt_media->bind_param("i",  $gallery['id']);
+            $stmt_media->execute();
+            $media_result = $stmt_media->get_result();
+
+            $images_count = 0;
+            $videos_count = 0;
+            $last_updated = null;
+
+            while ($media = $media_result->fetch_assoc()) {
+                if ($media['file_type'] == 'image') {
+                    $images_count++;
+                } else {
+                    $videos_count++;
+                }
+                if (!$last_updated) {
+                    $last_updated = $media['uploaded_at'];
+                }
+            }
+
+            // Format the last updated time
+            $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last_updated)) : 'No updates yet';
+            ?>
+
+            <div class="col-xl-9 col-sm-12 card mb-4">
                 <div class="card-body">
-                    <h5 class="card-title"><?php echo htmlspecialchars($gallery['title']); ?></h5>
+                    <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>">
+                        <h5 class="card-title"><?php echo htmlspecialchars($gallery['title']); ?></h5>
+                    </a>
                     <p class="card-text"><?php echo htmlspecialchars($gallery['description']); ?></p>
+                    <p class="text-muted">
+                        <?php echo $images_count; ?> Images, <?php echo $videos_count; ?> Videos | Last updated: <?php echo $last_updated_formatted; ?>
+                    </p>
 
                     <!-- Display Hero Images -->
                     <?php if (!empty($gallery['hero_images'])): ?>

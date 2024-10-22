@@ -6,7 +6,8 @@ if (!isset($_SESSION['user_id'])) {
     die("You must be logged in to update a gallery.");
 }
 
-$gallery_id = $_GET['id']; // Gallery ID from URL
+$gallery_id = $_GET['gallery_id']; // Gallery ID from URL
+$video_file = $_GET['video_file']; // Gallery ID from URL
 
 // Fetch the gallery details
 $stmt = $conn->prepare("SELECT * FROM galleries WHERE id = ? AND created_by = ?");
@@ -18,7 +19,6 @@ if (!$gallery) {
     die("Gallery not found or you don't have permission to update it.");
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -74,24 +74,32 @@ if (!$gallery) {
     <?php include 'navbar.php'; ?>
 
     <div class="container mt-5">
-        <h2>Update Gallery</h2>
-
-
 
         <div class="container mt-4">
             <!-- Video Section -->
             <div class="row">
                 <div class="col-12 col-md-8 mx-auto">
-                    <div class="card p-3">
+                    <div class="card p-3 d-flex justify-content-center">
                         <div class="mb-3">
-                            <label for="videoInput" class="form-label">Select a video file:</label>
-                            <input type="file" accept="video/*" id="videoInput" class="form-control" />
+                            <h2>Extract Images From Video</h2>
+                            <h4><?= htmlspecialchars($video_file); ?></h4> <!-- Escaping output for security -->
                         </div>
-                        <video id="videoPlayer" controls class="w-100 rounded mb-3"></video>
-                        <button id="captureButton" class="btn btn-primary" disabled>Capture Frame</button>
+                        <video id="videoPlayer" src="uploads/<?= htmlspecialchars($video_file); ?>" style="max-height: 30rem; justify-content: center;" controls muted class="w-100 rounded mb-3"></video>
+                        <button id="captureButton" class="btn btn-primary">Capture Frame</button>
                     </div>
                 </div>
             </div>
+
+            <!-- Hidden form input and submit button -->
+            <form id="uploadForm" class="mt-4" action="gallery_update.php?id=<?php echo $gallery_id; ?>" method="post" enctype="multipart/form-data">
+                <input type="file" id="capturedFrames" name="media[]" multiple hidden />
+                <input type="text" class="form-control" id="title" name="title" value="<?php echo $gallery['title']; ?>" hidden required>
+                <textarea hidden class="form-control" id="description" name="description" required><?php echo $gallery['description']; ?></textarea>
+                <button type="submit" class="btn btn-success">Upload Selected Frames</button>
+                <div class="progress mb-3">
+                    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                </div>
+            </form>
 
             <!-- Captured Frames -->
             <div class="row">
@@ -101,14 +109,6 @@ if (!$gallery) {
                 </div>
             </div>
 
-            <!-- Hidden form input and submit button -->
-            <form id="uploadForm" class="mt-4" action="gallery_update.php?id=<?php echo $gallery_id; ?>" method="post" enctype="multipart/form-data">
-                <input type="file" id="capturedFrames" name="media[]" multiple hidden />
-                <button type="submit" class="btn btn-success">Upload Selected Frames</button>
-                <div class="progress mb-3">
-                    <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                </div>
-            </form>
         </div>
 
     </div>
@@ -151,19 +151,6 @@ if (!$gallery) {
             };
 
             xhr.send(formData);
-        });
-    </script>
-
-    <script>
-        document.getElementById('videoInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const videoPlayer = document.getElementById('videoPlayer');
-                const url = URL.createObjectURL(file);
-                videoPlayer.src = url;
-                videoPlayer.load();
-                document.getElementById('captureButton').disabled = false;
-            }
         });
 
         document.getElementById('captureButton').addEventListener('click', function() {

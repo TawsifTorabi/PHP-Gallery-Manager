@@ -96,6 +96,8 @@ if (!$gallery) {
             <!-- Hidden form input and submit button -->
             <form id="uploadForm" class="mt-4" action="gallery_update.php?id=<?php echo $gallery_id; ?>" method="post" enctype="multipart/form-data">
                 <input type="file" id="capturedFrames" name="media[]" multiple hidden />
+                <input type="text" class="form-control" id="title" name="title" value="<?php echo $gallery['title']; ?>" hidden required>
+                <textarea hidden class="form-control" id="description" name="description" required><?php echo $gallery['description']; ?></textarea>
                 <button type="submit" class="btn btn-success">Upload Selected Frames</button>
                 <div class="progress mb-3">
                     <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
