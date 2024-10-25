@@ -194,7 +194,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                         <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
                                         <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
 
-                                        <video id="videoplayer<?php echo $media['id']; ?>" width="100%" controls preload="none" style="display: none;">
+                                        <video class="img-fluid thumb-img" id="videoplayer<?php echo $media['id']; ?>" width="100%" controls preload="none" style="display: none;">
                                             <source src="" type="video/mp4">
                                             Your browser does not support the video tag.
                                         </video>
