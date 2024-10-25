@@ -169,7 +169,13 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         </div>
                     </div>
 
-
+                    <style>
+                        .media-style{
+                            position: relative;
+                            overflow: hidden; 
+                            width: auto;
+                        }
+                    </style>
 
                     <div class="row" id="mediaContainer">
                         <?php
@@ -178,12 +184,12 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         $media_files = [];
                         $i = 0;
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-sm-3 col-6 m-auto mb-3 media-item" style="position: relative;overflow: hidden;" data-type="<?php echo $media['file_type']; ?>">
+                            <div class="col-sm-3 col-6 m-auto mb-3 media-item media-style" data-type="<?php echo $media['file_type']; ?>">
                                 <?php if ($media['file_type'] == 'image'): ?>
                                     <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                     <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)">
                                 <?php else: ?>
-                                    <div class="video-container" style="position: relative; cursor: pointer; overflow: hidden;">
+                                    <div class="video-container media-style">
                                         <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                         <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
                                         <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
