@@ -170,9 +170,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     </div>
 
                     <style>
-                        .media-style{
+                        .media-style {
                             position: relative;
-                            overflow: hidden; 
+                            overflow: hidden;
                             width: auto;
                         }
                     </style>
@@ -186,18 +186,31 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
                             <div class="col-sm-3 col-6 m-auto mb-3 media-item media-style" data-type="<?php echo $media['file_type']; ?>">
                                 <?php if ($media['file_type'] == 'image'): ?>
-                                    <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
-                                    <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)">
+                                    <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;" />
+
+                                    <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=800" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
+                                        <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" />
+                                    </a>
+
+
+                                    <!-- <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" 
+                                        data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" 
+                                        onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)"> -->
                                 <?php else: ?>
                                     <div class="video-container media-style">
                                         <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
                                         <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
-                                        <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
 
-                                        <video class="img-fluid thumb-img" id="videoplayer<?php echo $media['id']; ?>" width="100%" controls preload="none" style="display: none;">
+                                        <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
+                                            <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
+                                        </a>
+
+                                        <!-- <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" /> -->
+
+                                        <!-- <video class="img-fluid thumb-img" id="videoplayer<?php echo $media['id']; ?>" width="100%" controls preload="none" style="display: none;">
                                             <source src="" type="video/mp4">
                                             Your browser does not support the video tag.
-                                        </video>
+                                        </video> -->
 
                                         <!-- Dropdown for video options -->
                                         <div class="dropdown mt-2 customDropdown">
@@ -278,6 +291,24 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 
         <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Define GLightbox options
+                const options = {
+                    selector: '.my-lightbox-toggle', // Define selector for lightbox elements
+                    touchNavigation: true, // Enable touch support
+                    loop: false, // Loop through gallery images
+                    openEffect: 'fade', // Open animation effect
+                    closeEffect: 'fade', // Close animation effect
+                    zoomable: true, // Allow zoom on images
+                    draggable: true, // Allow dragging when zoomed in
+                    backdrop: true // Allow closing lightbox on clicking outside
+                };
+
+                // Initialize GLightbox for elements with the '.my-lightbox-toggle' class
+                const lightbox = GLightbox(options);
+            });
+
+
             const myModal = new bootstrap.Modal(document.getElementById('lightboxModal'));
 
             function hideLightbox() {
@@ -425,8 +456,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                 });
             }
         </script>
-
-
+        <link href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
 </body>
 
 </html>
