@@ -130,13 +130,6 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
                 <a href="logout.php" class="btn btn-danger" onclick="return confirm('Are you sure you want to logout?');">Logout</a>
             </div>
         </div>
-        <form action="search_gallery.php" method="get" class="mt-2">
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" name="query" placeholder="Search for galleries" required>
-                <button class="btn btn-outline-secondary" type="submit">Search</button>
-            </div>
-        </form>
-
     </div>
 
     <div class="container mt-5">

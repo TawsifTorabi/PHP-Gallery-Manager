@@ -189,7 +189,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                     <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;" />
 
                                     <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=800" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
-                                        <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" />
+                                        <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400" class="img-fluid gallery-img" alt="Image" />
                                     </a>
 
 
@@ -199,9 +199,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 <?php else: ?>
                                     <div class="video-container media-style">
                                         <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
-                                        <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
-
+                                        
                                         <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
+                                            <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
                                             <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
                                         </a>
 
@@ -301,7 +301,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     closeEffect: 'fade', // Close animation effect
                     zoomable: true, // Allow zoom on images
                     draggable: true, // Allow dragging when zoomed in
-                    backdrop: true // Allow closing lightbox on clicking outside
+                    backdrop: true, // Allow closing lightbox on clicking outside
+                    preload: 5 // Preload 2 images before and after the current image
                 };
 
                 // Initialize GLightbox for elements with the '.my-lightbox-toggle' class

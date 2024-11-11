@@ -44,11 +44,15 @@ $total_pages = ceil($total_galleries / $records_per_page);
     <style>
         .hero-images {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-evenly;
             overflow: hidden;
             border: 1px solid #ddd;
             border-radius: 5px;
-            height: 18rem;
+            height: auto;
+            align-items: stretch;
+            align-content: stretch;
+            flex-wrap: wrap;
+            flex-direction: row;
         }
 
         .hero-images img {
