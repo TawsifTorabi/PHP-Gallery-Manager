@@ -281,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     cropper = new Cropper(document.getElementById('imageToCrop'), {
                         viewMode: 1,
                     });
-                }, 500);
+                }, 150);
             };
             reader.readAsDataURL(file);
         }
@@ -345,9 +345,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             };
 
-            
+
             //selectedFiles.forEach(file => formData.append('media[]', file));
-            
+
             // Handle errors
             xhr.onerror = function() {
                 alert('An error occurred while uploading the files.');
@@ -355,7 +355,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Send the form data
             xhr.send(formData);
-            
+
+        });
+
+        // Clipboard image support
+        window.addEventListener('paste', (event) => {
+            const clipboardItems = event.clipboardData.items;
+            for (const item of clipboardItems) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    const files = Array.from(mediaInput.files);
+                    files.push(file);
+                    const dataTransfer = new DataTransfer();
+                    files.forEach(f => dataTransfer.items.add(f));
+                    mediaInput.files = dataTransfer.files;
+
+                    const event = new Event('change');
+                    mediaInput.dispatchEvent(event);
+                }
+            }
         });
     </script>
 </body>
