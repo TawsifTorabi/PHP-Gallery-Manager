@@ -1,22 +1,50 @@
 <?php
-session_start();
-require 'db.php';
+include 'session.php';
+require 'db.php'; // Include your database connection file
 
+// Ensure the user is logged in
 if (!isset($_SESSION['user_id'])) {
-    die("You must be logged in to update a gallery.");
-    header('Location: index.php');
+    die("You must be logged in to create a gallery.");
 }
 
-$gallery_id = $_GET['id']; // Gallery ID from URL
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $user_id = $_SESSION['user_id'];
+    $title = $_POST['title'];
+    $description = $_POST['description'];
 
-// Fetch the gallery details
-$stmt = $conn->prepare("SELECT * FROM galleries WHERE id = ? AND created_by = ?");
-$stmt->bind_param("ii", $gallery_id, $_SESSION['user_id']);
-$stmt->execute();
-$gallery = $stmt->get_result()->fetch_assoc();
+    // Create a new gallery
+    $stmt = $conn->prepare("INSERT INTO galleries (title, description, created_by) VALUES (?, ?, ?)");
+    $stmt->bind_param("ssi", $title, $description, $user_id);
+    $stmt->execute();
+    $gallery_id = $stmt->insert_id; // Get the newly created gallery ID
 
-if (!$gallery) {
-    die("Gallery not found or you don't have permission to update it.");
+    // Handle media uploads
+    foreach ($_FILES['media']['name'] as $key => $file_name) {
+        $file_tmp = $_FILES['media']['tmp_name'][$key];
+        $file_type = mime_content_type($file_tmp);
+
+        // Check if the file is an image or video
+        $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
+
+        // Generate a unique file name using uniqid and timestamp
+        $file_ext = pathinfo($file_name, PATHINFO_EXTENSION); // Get the file extension
+        $unique_file_name = uniqid() . '-' . time() . '.' . $file_ext; // Append timestamp and extension
+        $upload_dir = 'uploads/';
+
+        if (move_uploaded_file($file_tmp, $upload_dir . $unique_file_name)) {
+            // Insert the uploaded file details into the `images` table
+            $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type) VALUES (?, ?, ?)");
+            $stmt->bind_param("iss", $gallery_id, $unique_file_name, $media_type);
+            $stmt->execute();
+        } else {
+            echo "Failed to upload file: " . $file_name;
+        }
+    }
+
+
+    $msg = 'Gallery created successfully!';
+    //header("Location: dashboard.php"); // Redirect to dashboard after creation
+    header("Location: display_gallery.php?id=$gallery_id&msg=true&msg_content=$msg");
 }
 ?>
 
@@ -26,7 +54,7 @@ if (!$gallery) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Gallery</title>
+    <title>Create Gallery</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -73,29 +101,30 @@ if (!$gallery) {
     <!-- Fixed Top Navbar -->
     <?php include 'navbar.php'; ?>
 
-    <div class="container mt-5">
-        <h2>Update Gallery</h2>
-        <form id="galleryForm" action="gallery_update.php?id=<?php echo $gallery_id; ?>" method="post" enctype="multipart/form-data">
+    <div class="container mt-2">
+        <h2>Create New Gallery</h2>
+        <form id="galleryForm" action="gallery_form.php" method="post" enctype="multipart/form-data">
             <div class="form-group mb-3">
                 <label for="title">Gallery Title</label>
-                <input type="text" class="form-control" id="title" name="title" value="<?php echo $gallery['title']; ?>" required>
+                <input type="text" class="form-control" id="title" name="title" required>
             </div>
             <div class="form-group mb-3">
                 <label for="description">Gallery Description</label>
-                <textarea class="form-control" id="description" name="description" required><?php echo $gallery['description']; ?></textarea>
+                <textarea class="form-control" id="description" name="description" required></textarea>
             </div>
             <div class="form-group mb-3">
-                <label for="media">Add More Media (Images/Videos)</label>
-                <input type="file" class="form-control" id="mediaInput" name="media[]" multiple accept="image/*,video/*">
+                <label for="media">Upload Media (Images/Videos)</label>
+                <input type="file" class="form-control" id="mediaInput" name="media[]" multiple required>
             </div>
-            <button type="submit" class="btn btn-primary">Update Gallery</button>
+            <button type="submit" id="createbtn" class="btn btn-primary">Create Gallery</button>
             <!-- Add progress bar in HTML -->
-            <div class="progress mb-3">
+            <div class="progress mt-3 mb-3">
                 <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
             </div>
-
             <div class="media-preview-container" id="mediaPreviewContainer"></div>
         </form>
+
+
     </div>
 
     <!-- Bootstrap JS and Popper.js -->
@@ -108,6 +137,7 @@ if (!$gallery) {
 
             const form = event.target;
             const formData = new FormData(form);
+            document.getElementById('createbtn').setAttribute('disabled', true);
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', form.action, true);
@@ -126,10 +156,10 @@ if (!$gallery) {
             // When the upload is complete
             xhr.onload = function() {
                 if (xhr.status === 200) {
-                    alert('Gallery Updated successfully!');
-                    window.location.href = 'display_gallery.php?id=<?=$gallery_id?>&msg=true&msg_content='+'Gallery Updated Successfully!'; // Redirect on success
+                    alert('Gallery created successfully!');
+                    window.location.href = 'dashboard.php'; // Redirect on success
                 } else {
-                    alert('Failed to Update gallery. Please try again.');
+                    alert('Failed to create gallery. Please try again.');
                 }
             };
 
@@ -251,7 +281,6 @@ if (!$gallery) {
             }
         });
     </script>
-
 </body>
 
 </html>

@@ -181,7 +181,7 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
                 <tbody>
                     <?php foreach ($galleries as $gallery): ?>
                         <tr>
-                            <td><?php echo htmlspecialchars($gallery['title']); ?></td>
+                            <td><a  href="display_gallery.php?id=<?php echo $gallery['id']; ?>"><?php echo htmlspecialchars($gallery['title']); ?></a></td>
                             <td><?php echo date('Y-m-d H:i:s', strtotime($gallery['created_at'])); ?></td>
                             <td>
                                 <div class="dropdown">
@@ -189,7 +189,10 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
                                         Action
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                                        <li><a class="dropdown-item" href="display_gallery.php?id=<?php echo $gallery['id']; ?>">View</a></li>
+                                        <li><a class="dropdown-item" href="display_gallery.php?id=<?php echo $gallery['id']; ?>">View Gallery</a></li>
+                                        <li><a class="dropdown-item" href="hero_images.php?id=<?php echo $gallery['id']; ?>">Set Hero Images</a></li>
+                                        <li><a class="dropdown-item" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>">Upload Image/Video</a></li>
+                                        <li><a class="dropdown-item" href="image_from_video.php?id=<?php echo $gallery['id']; ?>">Upload Image From Video</a></li>
                                         <li><a class="dropdown-item text-danger" href="delete_gallery.php?gallery_id=<?php echo $gallery['id']; ?>" onclick="return confirm('Are you sure you want to delete this gallery?');">Delete</a></li>
                                     </ul>
                                 </div>
