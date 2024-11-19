@@ -2,6 +2,7 @@
 // Define menu items in an associative array
 $menu_items = [
   'dashboard.php' => 'Dashboard',
+  'merge_gallery_view.php' => 'Merge Galleries',
   'gallery_form.php' => 'Create Gallery',
   'logout.php' => 'Logout' // You can easily add more items here
 ];

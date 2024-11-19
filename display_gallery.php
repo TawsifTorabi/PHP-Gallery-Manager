@@ -146,6 +146,198 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         Last updated: <?php echo $last_updated_formatted; ?>
                     </p>
 
+
+                    <div class="container mt-4">
+                        <div id="duplicate-images-container" class="row_2 row overflow-auto" style="white-space: nowrap;">
+                            <!-- Duplicate image cards will appear here -->
+                        </div>
+                    </div>
+
+                    <script>
+                        // script.js
+
+                        const galleryId = '<?php echo $gallery['id']; ?>'; // Replace with actual gallery ID
+
+                        // Function to load duplicate images from the server
+                        window.loadDuplicates = function(galleryId) {
+                            $.getJSON(`get_gallery_duplicates.php?gallery_id=${galleryId}`, function(response) {
+                                if (response.duplicates && response.duplicates.length > 0) {
+                                    displayDuplicates(response.duplicates);
+                                } else {
+                                    $('#duplicate-images-container').html('<p>No duplicates found.</p>');
+                                }
+                            }).fail(function() {
+                                alert('Error loading duplicate images.');
+                            });
+                        }
+
+                        $(document).ready(function() {
+                            loadDuplicates(galleryId);
+                        });
+
+                        // Function to display duplicate images in cards
+                        window.displayDuplicates = function(duplicates) {
+                            let html = '';
+                            duplicates.forEach((pair, index) => {
+                                html += `
+                    <div class="card duplicate-card mr-5">
+                        <div class="card-body">
+                            <h5 class="card-title">Duplicate Pair #${index + 1}</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="image-container">                   
+                                        <a href="serve_image.php?file=${pair.image1_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
+                                            <img src="serve_image.php?file=${pair.image1_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
+                                            <div class="overlay">
+                                                <div class="text">#${pair.image1_id}</div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <button class="btn btn-success mt-2" onclick="keepImage(${pair.image1_id}, ${pair.image2_id})">Keep This</button>
+                                </div>
+                                <div class="col-6">
+                                    <div class="image-container">
+                                        <a href="serve_image.php?file=${pair.image2_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
+                                            <img src="serve_image.php?file=${pair.image2_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
+                                            <div class="overlay">
+                                                <div class="text">#${pair.image2_id}</div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <button class="btn btn-danger mt-2" onclick="keepImage(${pair.image2_id}, ${pair.image1_id})">Keep This</button>
+                                </div>
+                                <button class="btn btn-secondary mt-3" onclick="flagAsNonDuplicate(${pair.image1_id}, ${pair.image2_id}, ${galleryId}, ${index}, this.closest('.card'))">Keep Both</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                            });
+
+                            $('#duplicate-images-container').html(html);
+                            GlightboxDefine();
+                        }
+
+                        // Flag as non-duplicate
+                        window.flagAsNonDuplicate = function(media1, media2, galleryId, cardIndex, element) {
+                            $.post('flag_duplicate.php', {
+                                media_1: media1,
+                                media_2: media2,
+                                gallery_id: galleryId,
+                                matched: 0
+                            }, function(response) {
+                                if (response.status === 'success') {
+                                    $(`#duplicate-card-${cardIndex}`).remove();
+                                    element.remove();
+                                } else {
+                                    alert('Error flagging the images.');
+                                }
+                            });
+                        }
+
+                        // Function to handle keeping one image and deleting the other
+                        window.keepImage = function(keepImageId, deleteImageId) {
+                            $.get(`delete_image.php?image_id=${deleteImageId}`, function(response) {
+                                if (response.status === 'success') {
+                                    // Remove the card for this duplicate pair
+                                    $(`#duplicate-card-${keepImageId}`).remove();
+                                    // Optionally, reload the next duplicates after deletion
+                                    loadDuplicates(galleryId);
+                                    document.getElementById('mediaContent' + deleteImageId).remove();
+                                } else {
+                                    alert('Error deleting the image.');
+                                }
+                            });
+                        }
+                        window.GlightboxDefine = function() {
+                            // Define GLightbox options
+                            const options = {
+                                selector: '.my-lightbox-toggle', // Define selector for lightbox elements
+                                touchNavigation: true, // Enable touch support
+                                loop: false, // Loop through gallery images
+                                openEffect: 'fade', // Open animation effect
+                                closeEffect: 'fade', // Close animation effect
+                                zoomable: true, // Allow zoom on images
+                                draggable: true, // Allow dragging when zoomed in
+                                backdrop: true, // Allow closing lightbox on clicking outside
+                                preload: 5 // Preload 2 images before and after the current image
+                            };
+
+                            // Initialize GLightbox for elements with the '.my-lightbox-toggle' class
+                            const lightbox = GLightbox(options);
+                        }
+                    </script>
+
+                    <!-- Add the following CSS for the uniform image size and horizontal scroll effect -->
+                    <style>
+                        .uniform-image {
+                            width: 100%;
+                            height: 200px;
+                            /* Fixed height for uniform images */
+                            object-fit: cover;
+                            /* Maintain aspect ratio while filling the area */
+                        }
+
+                        .duplicate-card {
+                            display: inline-block;
+                            /* Display cards horizontally */
+                            width: 300px;
+                            /* Set a fixed width for each card */
+                        }
+
+                        .row_2 {
+                            display: flex;
+                            flex-wrap: nowrap;
+                            /* Keep images in one row without wrapping */
+                            justify-content: space-between;
+                        }
+
+                        .image-container {
+                            position: relative;
+                        }
+
+                        .overlay {
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background-color: rgba(0, 0, 0, 0.5);
+                            color: white;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            opacity: 0.5;
+                            transition: opacity 0.3s;
+                        }
+
+                        .image-container:hover .overlay {
+                            opacity: 1;
+                        }
+
+                        .overlay .text {
+                            font-size: 12px;
+                            /* Smaller text */
+                            text-align: center;
+                        }
+
+                        /* Enable horizontal scroll for the duplicate images container */
+                        #duplicate-images-container {
+                            display: flex;
+                            overflow-x: auto;
+                            padding: 10px;
+                        }
+
+                        /* Prevent horizontal scroll from showing the "no duplicates" message */
+                        #duplicate-images-container p {
+                            margin: 0;
+                            padding: 10px;
+                        }
+                    </style>
+
+
+
+
+
                     <div class="row">
                         <div class="col-4">
                             <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()"><i class="bi bi-trash"></i></button>
@@ -184,7 +376,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         $media_files = [];
                         $i = 0;
                         while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-sm-3 col-6 m-auto mb-3 media-item media-style" data-type="<?php echo $media['file_type']; ?>">
+                            <div class="col-sm-3 col-6 m-auto mb-3 media-item media-style" id="mediaContent<?php echo $media['id']; ?>" data-type="<?php echo $media['file_type']; ?>">
                                 <?php if ($media['file_type'] == 'image'): ?>
                                     <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;" />
 
@@ -199,7 +391,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 <?php else: ?>
                                     <div class="video-container media-style">
                                         <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
-                                        
+
                                         <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
                                             <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
                                             <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
@@ -293,20 +485,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 // Define GLightbox options
-                const options = {
-                    selector: '.my-lightbox-toggle', // Define selector for lightbox elements
-                    touchNavigation: true, // Enable touch support
-                    loop: false, // Loop through gallery images
-                    openEffect: 'fade', // Open animation effect
-                    closeEffect: 'fade', // Close animation effect
-                    zoomable: true, // Allow zoom on images
-                    draggable: true, // Allow dragging when zoomed in
-                    backdrop: true, // Allow closing lightbox on clicking outside
-                    preload: 5 // Preload 2 images before and after the current image
-                };
-
-                // Initialize GLightbox for elements with the '.my-lightbox-toggle' class
-                const lightbox = GLightbox(options);
+                GlightboxDefine();
             });
 
 
