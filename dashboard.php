@@ -23,7 +23,7 @@ $total_galleries = $total_row['total'];
 $total_pages = ceil($total_galleries / $items_per_page);
 
 // Fetch galleries created by the logged-in user with pagination
-$stmt = $conn->prepare("SELECT id, title, created_at FROM galleries WHERE created_by = ? ORDER BY id DESC LIMIT ?, ?");
+$stmt = $conn->prepare("SELECT id, title, created_at, description, hero_images FROM galleries WHERE created_by = ? ORDER BY id DESC LIMIT ?, ?");
 $stmt->bind_param("iii", $_SESSION['user_id'], $offset, $items_per_page);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -145,6 +145,7 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
         <!-- Pagination -->
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center flex-wrap">
+                <!-- Previous Page -->
                 <?php if ($page > 1): ?>
                     <li class="page-item">
                         <a class="page-link" href="?page=<?php echo $page - 1; ?>" aria-label="Previous">
@@ -153,12 +154,34 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
                     </li>
                 <?php endif; ?>
 
-                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-                    <li class="page-item <?php echo $i === $page ? 'active' : ''; ?>">
-                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
+                <!-- Display Previous Pages (Limited) -->
+                <?php if ($total_pages > 20): ?>
+                    <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
+                    <li class="page-item"><span class="page-link">...</span></li>
+                <?php endif; ?>
 
+                <!-- Current Page -->
+                <li class="page-item <?php echo $page === 1 ? 'active' : ''; ?>">
+                    <a class="page-link" href="?page=1"><?php echo $page; ?></a>
+                </li>
+
+                <!-- Display Next Pages (Limited) -->
+                <?php if ($total_pages > 20): ?>
+                    <li class="page-item"><span class="page-link">...</span></li>
+                    <li class="page-item"><a class="page-link" href="?page=<?php echo $total_pages; ?>"><?php echo $total_pages; ?></a></li>
+                <?php endif; ?>
+
+                <!-- Input for Jumping to a Specific Page -->
+                <?php if ($total_pages > 20): ?>
+                    <li class="page-item">
+                        <input type="number" min="1" max="<?php echo $total_pages; ?>" id="pageInput" class="form-control" style="width: 60px; display: inline-block; text-align: center;" placeholder="Go">
+                    </li>
+                    <li class="page-item">
+                        <button class="btn btn-primary" onclick="jumpToPage()">Go</button>
+                    </li>
+                <?php endif; ?>
+
+                <!-- Next Page -->
                 <?php if ($page < $total_pages): ?>
                     <li class="page-item">
                         <a class="page-link" href="?page=<?php echo $page + 1; ?>" aria-label="Next">
@@ -169,24 +192,73 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
             </ul>
         </nav>
 
+        <script>
+            // Function to jump to the specified page
+            function jumpToPage() {
+                var pageInput = document.getElementById('pageInput').value;
+                var totalPages = <?php echo $total_pages; ?>;
+
+                // Ensure the entered value is a valid page number
+                if (pageInput >= 1 && pageInput <= totalPages) {
+                    window.location.href = '?page=' + pageInput;
+                } else {
+                    alert('Please enter a valid page number between 1 and ' + totalPages);
+                }
+            }
+        </script>
+
+
+
+        <style>
+            .mini-thumb {
+                width: 2.3rem;
+                height: 2.3rem;
+                object-fit: cover;
+                padding: 0.05rem;
+            }
+        </style>
+
+
         <?php if (count($galleries) > 0): ?>
             <table class="table table-striped" id="galleryTable">
                 <thead>
                     <tr>
-                        <th>Gallery Title</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
+                        <th>Thumbnails</th>
+                        <th>Info.</th>
+                        <th>Menu</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     <?php foreach ($galleries as $gallery): ?>
                         <tr>
-                            <td><a  href="display_gallery.php?id=<?php echo $gallery['id']; ?>"><?php echo htmlspecialchars($gallery['title']); ?></a></td>
-                            <td><?php echo date('Y-m-d H:i:s', strtotime($gallery['created_at'])); ?></td>
+                            <td>
+                                <div>
+                                    <!-- Display Hero Images -->
+                                    <?php if (!empty($gallery['hero_images'])): ?>
+                                        <div class="mb-2">
+                                            <div class="hero-images">
+                                                <?php
+                                                $hero_images = explode('$%@!', $gallery['hero_images']);
+                                                foreach ($hero_images as $image): ?>
+                                                    <img src="serve_image.php?w=80&file=<?php echo rawurlencode($image); ?>"
+                                                        class=" mini-thumb img-thumbnail"
+                                                        alt="Hero Image">
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>"><?php echo htmlspecialchars($gallery['title']); ?></a>
+                                <br>
+                                <small class="text-muted text-sm" style="font-size: 12px"><?php echo date('Y-m-d H:i:s', strtotime($gallery['created_at'])); ?></small>
+                            </td>
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Action
+                                        &nbsp;
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                         <li><a class="dropdown-item" href="display_gallery.php?id=<?php echo $gallery['id']; ?>">View Gallery</a></li>

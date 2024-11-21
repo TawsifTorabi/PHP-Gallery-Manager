@@ -36,7 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (move_uploaded_file($file_tmp, $upload_dir . $unique_file_name)) {
             // Insert the uploaded file details into the `images` table
-            $imagehash = getImageHash($upload_dir . $unique_file_name);
+            if($media_type == 'image'){
+                $imagehash = getImageHash($upload_dir . $unique_file_name);
+            }else{
+                $imagehash = '';
+            }
             $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type, imageHash_hamming) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("isss", $gallery_id, $unique_file_name, $media_type, $imagehash);
             $stmt->execute();

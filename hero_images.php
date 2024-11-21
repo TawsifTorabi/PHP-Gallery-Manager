@@ -44,7 +44,7 @@ while ($media = $media_result->fetch_assoc()) {
 $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last_updated)) : 'No updates yet';
 
 // Fetch the hero images if set
-$hero_images = !empty($gallery['hero_images']) ? explode(',', $gallery['hero_images']) : [];
+$hero_images = !empty($gallery['hero_images']) ? explode('$%@!', $gallery['hero_images']) : [];
 ?>
 
 <!DOCTYPE html>
