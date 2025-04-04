@@ -109,9 +109,12 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             text-shadow: -4px 3px 13px #0000002e;
         }
     </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/css/glightbox.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/js/glightbox.min.js"></script>
 </head>
 
 <body>
+
     <!-- Fixed Top Navbar -->
     <?php include 'navbar.php'; ?>
 
@@ -187,7 +190,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 <div class="col-6">
                                     <div class="image-container">                   
                                         <a href="serve_image.php?file=${pair.image1_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
-                                            <img src="serve_image.php?file=${pair.image1_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
+                                            <img loading="lazy" src="serve_image.php?file=${pair.image1_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
                                             <div class="overlay">
                                                 <div class="text">#${pair.image1_id}</div>
                                             </div>
@@ -198,7 +201,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 <div class="col-6">
                                     <div class="image-container">
                                         <a href="serve_image.php?file=${pair.image2_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
-                                            <img src="serve_image.php?file=${pair.image2_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
+                                            <img loading="lazy" src="serve_image.php?file=${pair.image2_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
                                             <div class="overlay">
                                                 <div class="text">#${pair.image2_id}</div>
                                             </div>
@@ -249,23 +252,50 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                             });
                         }
                         window.GlightboxDefine = function() {
-                            // Define GLightbox options
-                            const options = {
-                                selector: '.my-lightbox-toggle', // Define selector for lightbox elements
-                                touchNavigation: true, // Enable touch support
-                                loop: false, // Loop through gallery images
-                                openEffect: 'fade', // Open animation effect
-                                closeEffect: 'fade', // Close animation effect
-                                zoomable: true, // Allow zoom on images
-                                draggable: true, // Allow dragging when zoomed in
-                                backdrop: true, // Allow closing lightbox on clicking outside
-                                preload: 5 // Preload 2 images before and after the current image
-                            };
 
-                            // Initialize GLightbox for elements with the '.my-lightbox-toggle' class
-                            const lightbox = GLightbox(options);
-                        }
+                            const lightbox = GLightbox({
+                                selector: '.my-lightbox-toggle', // Your selector
+                                touchNavigation: true,
+                                loop: false,
+                                openEffect: 'fade',
+                                closeEffect: 'fade',
+                                zoomable: true,
+                                draggable: true,
+                                backdrop: true,
+                                preload: 5,
+                                plyr: {
+                                    css: 'https://cdn.plyr.io/3.5.6/plyr.css', // Plyr CSS
+                                    js: 'https://cdn.plyr.io/3.5.6/plyr.js', // Plyr JS
+                                    config: {
+                                        ratio: '9:16', // Default ratio, can be changed dynamically
+                                        muted: false,
+                                        hideControls: true,
+                                        youtube: {
+                                            noCookie: true,
+                                            rel: 0,
+                                            showinfo: 0,
+                                            iv_load_policy: 3
+                                        },
+                                        vimeo: {
+                                            byline: false,
+                                            portrait: false,
+                                            title: false,
+                                            speed: true,
+                                            transparent: false
+                                        }
+                                    }
+                                }
+                            });
+
+
+
+                        };
                     </script>
+
+
+                    <style>
+
+                    </style>
 
                     <!-- Add the following CSS for the uniform image size and horizontal scroll effect -->
                     <style>
@@ -381,7 +411,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                     <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;" />
 
                                     <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=800" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
-                                        <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400" class="img-fluid gallery-img" alt="Image" />
+                                        <img loading="lazy" style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400" class="img-fluid gallery-img" alt="Image" />
                                     </a>
 
 
@@ -392,9 +422,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                     <div class="video-container media-style">
                                         <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
 
-                                        <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
+                                        <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-type="video" data-toggle="lightbox" rel="noopener noreferrer">
                                             <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
-                                            <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
+                                            <img loading="lazy" style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
                                         </a>
 
                                         <!-- <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" /> -->
@@ -636,8 +666,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                 });
             }
         </script>
-        <link href="https://cdn.jsdelivr.net/npm/glightbox/dist/css/glightbox.min.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
+
 </body>
 
 </html>

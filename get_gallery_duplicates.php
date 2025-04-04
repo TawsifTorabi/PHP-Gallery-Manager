@@ -57,7 +57,7 @@ for ($i = 0; $i < $total; $i++) {
         $distance = hammingDistance($images[$i]['imageHash_hamming'], $images[$j]['imageHash_hamming']);
         
         // If the Hamming Distance is below the threshold, mark as duplicate
-        if ($distance <= 50) { // Threshold, adjust if needed
+        if ($distance <= 40) { // Threshold, adjust if needed
 
             // Check if the pair is flagged as non-duplicate
             $flagQuery = "SELECT id FROM image_duplicate_flag 

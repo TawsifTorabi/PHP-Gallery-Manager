@@ -6,31 +6,35 @@ if (!isset($_SESSION['user_id'])) {
     die("You must be logged in to search galleries.");
 }
 
-// Number of records per page
-$records_per_page = 15;
+// Enable error reporting for debugging
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Get the current page or set default to 1
+$records_per_page = 15;
 $page = isset($_GET['page']) && is_numeric($_GET['page']) ? intval($_GET['page']) : 1;
 $start_from = ($page - 1) * $records_per_page;
 
 $search_query = isset($_GET['query']) ? $_GET['query'] : '';
+$search_tokens = array_filter(explode(' ', $search_query));
+$search_like = '%' . implode('%', $search_tokens) . '%';
 
-// Prepare the query with LIMIT for pagination
-$stmt = $conn->prepare("SELECT * FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ? ORDER BY id DESC LIMIT ?, ?");
-$search_like = "%" . $search_query . "%";
-$stmt->bind_param("ssiii", $search_like, $search_like, $_SESSION['user_id'], $start_from, $records_per_page);
+$sql = "SELECT * FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ? ORDER BY id DESC LIMIT ?, ?";
+$stmt = $conn->prepare($sql);
+$stmt->bind_param("sssii", $search_like, $search_like, $_SESSION['user_id'], $start_from, $records_per_page);
 $stmt->execute();
 $galleries = $stmt->get_result();
 
-// Get total number of galleries for pagination
-$total_stmt = $conn->prepare("SELECT COUNT(*) as total FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ?");
-$total_stmt->bind_param("ssi", $search_like, $search_like, $_SESSION['user_id']);
+// Pagination
+$total_sql = "SELECT COUNT(*) as total FROM galleries WHERE (title LIKE ? OR description LIKE ?) AND created_by = ?";
+$total_stmt = $conn->prepare($total_sql);
+$total_stmt->bind_param("sss", $search_like, $search_like, $_SESSION['user_id']);
 $total_stmt->execute();
 $total_result = $total_stmt->get_result();
 $total_row = $total_result->fetch_assoc();
 $total_galleries = $total_row['total'];
 $total_pages = ceil($total_galleries / $records_per_page);
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">

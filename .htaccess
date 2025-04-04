@@ -1,0 +1,45 @@
+# Enable Byte-Range Requests for Video
+<IfModule mod_headers.c>
+    Header set Accept-Ranges bytes
+</IfModule>
+
+# Enable Gzip Compression for Video
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE video/mp4 video/webm video/ogg
+</IfModule>
+
+# Cache Video Files
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType video/mp4 "access plus 1 week"
+    ExpiresByType video/webm "access plus 1 week"
+    ExpiresByType video/ogg "access plus 1 week"
+</IfModule>
+
+# Enable HTTP/2 Protocol
+<IfModule mod_http2.c>
+    Protocols h2 http/1.1
+</IfModule>
+
+# Set MIME Types for Video Files
+<IfModule mod_mime.c>
+    AddType video/mp4 .mp4
+    AddType video/webm .webm
+    AddType video/ogg .ogv
+</IfModule>
+
+# Prevent Download Blocking for Partial Content Requests
+<IfModule mod_filter.c>
+    FilterDeclare RANGE
+    FilterProvider RANGE HEAD resp=Content-Range
+    FilterProvider RANGE HEAD req=Range
+    FilterChain RANGE
+</IfModule>
+
+# Serve Pre-Encoded HLS or DASH Segments Efficiently
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ - [L]
+</IfModule>
