@@ -32,30 +32,58 @@ $galleries = $result->fetch_all(MYSQLI_ASSOC);
 
 
 // Function to calculate the size of a folder
+// function folderSize($dir)
+// {
+    // $totalSize = 0;
+
+    // // Open the directory
+    // $files = scandir($dir);
+
+    // // Loop through all files
+    // foreach ($files as $file) {
+        // if ($file !== "." && $file !== "..") {
+            // $path = $dir . DIRECTORY_SEPARATOR . $file;
+
+            // // If it's a directory, recursively calculate the size
+            // if (is_dir($path)) {
+                // $totalSize += folderSize($path);
+            // } else {
+                // // If it's a file, add the file size
+                // $totalSize += filesize($path);
+            // }
+        // }
+    // }
+
+    // return $totalSize;
+// }
+
 function folderSize($dir)
 {
-    $totalSize = 0;
+    $path = realpath($dir);
+    if (!$path) return 0;
 
-    // Open the directory
-    $files = scandir($dir);
+    // Use the Windows 'dir' command to get size
+    // /s = recursive, /-c = remove thousand separators
+    $command = 'dir /s /-c ' . escapeshellarg($path);
+    $output = shell_exec($command);
 
-    // Loop through all files
-    foreach ($files as $file) {
-        if ($file !== "." && $file !== "..") {
-            $path = $dir . DIRECTORY_SEPARATOR . $file;
+    if (!$output) return 0;
 
-            // If it's a directory, recursively calculate the size
-            if (is_dir($path)) {
-                $totalSize += folderSize($path);
-            } else {
-                // If it's a file, add the file size
-                $totalSize += filesize($path);
-            }
+    // Look for the line that says "X File(s) Y bytes"
+    // We target the second-to-last line of the output
+    $lines = explode("\n", trim($output));
+    $lastLines = array_slice($lines, -2); 
+
+    foreach ($lastLines as $line) {
+        if (preg_match('/(\d+)\s+bytes/', $line, $matches)) {
+            return (float)$matches[1];
         }
     }
 
-    return $totalSize;
+    return 0;
 }
+
+
 
 // Function to convert bytes to a human-readable format
 function formatSize($size)

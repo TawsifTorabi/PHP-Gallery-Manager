@@ -122,6 +122,17 @@ if (!$gallery) {
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <div class="me-auto">
+                        <select id="aspectRatioPreset" class="form-select form-select-sm">
+                            <option value="NaN">Free Crop</option>
+                            <option value="custom1">FB Day</option>
+                            <option value="custom2">Insta Day</option>
+                            <option value="1">Square (1:1)</option>
+                            <option value="1.77777777778">Widescreen (16:9)</option>
+                            <option value="0.66666666666">Portrait (2:3)</option>
+                            <option value="1.33333333333">Standard (4:3)</option>
+                        </select>
+                    </div>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="cropButton" class="btn btn-primary">Crop</button>
                 </div>
@@ -193,6 +204,37 @@ if (!$gallery) {
             reader.readAsDataURL(file);
         }
 
+        document.getElementById('aspectRatioPreset').addEventListener('change', function(e) {
+            if (!cropper) return;
+
+            const val = e.target.value;
+
+            if (val === "custom1") {
+                // 1. Allow free resizing
+                cropper.setAspectRatio(NaN);
+
+                // 2. Set the box to a specific size (e.g., 800x600)
+                // Note: These are 'natural' image pixels
+                cropper.setData({
+                    width: 1080,
+                    height: 1887,
+                });
+            } else if (val === "custom2") {
+                // 1. Allow free resizing
+                cropper.setAspectRatio(NaN);
+
+                // 2. Set the box to a specific size (e.g., 800x600)
+                // Note: These are 'natural' image pixels
+                cropper.setData({
+                    width: 1080,
+                    height: 1920,
+                });
+            } else {
+                // Apply standard fixed ratios (1, 1.77, etc)
+                cropper.setAspectRatio(parseFloat(val));
+            }
+        });
+
         // Function to preview videos
         function previewVideo(file, index) {
             const reader = new FileReader();
@@ -249,16 +291,20 @@ if (!$gallery) {
                 document.getElementById('imageToCrop').src = e.target.result;
                 currentFileIndex = index;
 
+                // RESET DROPDOWN TO DEFAULT
+                document.getElementById('aspectRatioPreset').value = "NaN";
+
                 const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
                 cropModal.show();
 
                 if (cropper) {
-                    cropper.destroy(); // Ensure cropper is fully destroyed before re-initializing
+                    cropper.destroy();
                 }
 
                 setTimeout(() => {
                     cropper = new Cropper(document.getElementById('imageToCrop'), {
                         viewMode: 1,
+                        aspectRatio: NaN, // Default to free crop
                     });
                 }, 150);
             };
@@ -318,7 +364,7 @@ if (!$gallery) {
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     alert('Gallery created successfully!');
-                    window.location.href = 'display_gallery.php?id=<?=$gallery_id?>';
+                    window.location.href = 'display_gallery.php?id=<?= $gallery_id ?>';
                 } else {
                     alert('Error creating gallery');
                 }
