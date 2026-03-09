@@ -140,7 +140,7 @@ if (!$gallery) {
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     alert('Gallery updated successfully!');
-                    window.location.href = 'dashboard.php'; // Redirect on success
+                    window.location.href = 'display_gallery.php?id=' + <?php echo $gallery_id; ?> + '&msg=true&msg_content=<?php echo urlencode('Updated Successfully'); ?>'; // Redirect on success
                 } else {
                     alert('Failed to update gallery. Please try again.');
                 }
