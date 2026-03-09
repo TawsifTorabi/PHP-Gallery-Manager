@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Create Gallery with Crop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
     <style>
         /* Your existing styles */
         .media-preview-container {
@@ -107,6 +108,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .progress {
             margin-top: 20px;
+        }
+    </style>
+    <style>
+        .ck-editor__editable_inline {
+            min-height: 200px;
         }
     </style>
 </head>
@@ -169,12 +175,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         let cropper;
         let currentFileIndex;
 
-        // Event listener for input file change
+        // Change this part in your script
         mediaInput.addEventListener('change', (event) => {
             const files = Array.from(event.target.files);
-            selectedFiles = [...files]; // Store selected files in selectedFiles array
 
-            renderPreviews(); // Use a separate function to render previews to avoid duplication
+            // Use push instead of overwriting, so we can add more files later
+            // and preserve the array during removals
+            selectedFiles.push(...files);
+
+            renderPreviews();
         });
 
         // Function to render previews
@@ -244,28 +253,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             reader.readAsDataURL(file);
         }
 
-        // Remove media function
+        // Replace your existing removeMedia function with this
         function removeMedia(index) {
-            // Remove the file from the selectedFiles array
+            // 1. Remove the file from our state array
             selectedFiles.splice(index, 1);
 
-            // Update the files in the input element
+            // 2. Sync the hidden input field so the POST request is correct
+            updateInputFiles();
+
+            // 3. Refresh the UI
+            renderPreviews();
+        }
+
+        // Helper function to sync the <input> with our selectedFiles array
+        function updateInputFiles() {
             const dataTransfer = new DataTransfer();
             selectedFiles.forEach(file => dataTransfer.items.add(file));
-
-            // Clear the current files in the input field and set it to the updated list
             mediaInput.files = dataTransfer.files;
-
-            // Optionally, reset the input field to trigger the change event
-            // This ensures the input field reflects the new state and avoids duplicates
-            mediaInput.value = ''; // Clear the input field
-
-            // Reassign files to input (necessary for browsers to refresh the input state)
-            mediaInput.files = dataTransfer.files;
-
-            // Trigger the change event to update the file preview
-            const event = new Event('change');
-            mediaInput.dispatchEvent(event);
         }
 
 
@@ -326,8 +330,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('galleryForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
+            // const form = event.target;
+            // const formData = new FormData(form);
+
+            /////
+            // PRECISION FIX: Sync CKEditor data to the original textarea
+            if (descriptionEditor) {
+                document.getElementById('description').value = descriptionEditor.getData();
+            }
+
             const form = event.target;
             const formData = new FormData(form);
+
+            // Check if description is empty after sync
+            if (formData.get('description').trim() === "") {
+                alert("Please provide a description.");
+                return;
+            }
+            /////
+
             document.getElementById('createbtn').setAttribute('disabled', true);
 
             const xhr = new XMLHttpRequest();
@@ -381,6 +402,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         });
+    </script>
+    <script>
+        let descriptionEditor;
+
+        ClassicEditor
+            .create(document.querySelector('#description'), {
+                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'],
+            })
+            .then(editor => {
+                descriptionEditor = editor;
+            })
+            .catch(error => {
+                console.error(error);
+            });
     </script>
 </body>
 
