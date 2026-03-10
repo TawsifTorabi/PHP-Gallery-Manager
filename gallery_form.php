@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="form-group mb-3">
                 <label for="description">Gallery Description</label>
-                <textarea class="form-control" id="description" name="description" required></textarea>
+                <textarea class="form-control" id="description" name="description"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label for="media">Upload Media (Images/Videos)</label>
@@ -330,25 +330,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         document.getElementById('galleryForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
-            // const form = event.target;
-            // const formData = new FormData(form);
-
-            /////
-            // PRECISION FIX: Sync CKEditor data to the original textarea
+            // 1. Sync CKEditor data to the textarea
             if (descriptionEditor) {
-                document.getElementById('description').value = descriptionEditor.getData();
+                const editorData = descriptionEditor.getData();
+                document.getElementById('description').value = editorData;
+
+                // 2. Manual Validation
+                // Since the browser can't focus a hidden field, we check it here
+                if (editorData.trim() === "") {
+                    alert("The description cannot be empty.");
+                    descriptionEditor.editing.view.focus(); // Focus the visible editor UI
+                    return;
+                }
             }
 
             const form = event.target;
             const formData = new FormData(form);
 
-            // Check if description is empty after sync
-            if (formData.get('description').trim() === "") {
-                alert("Please provide a description.");
-                return;
-            }
-            /////
-
+            // Disable button and proceed with XHR
             document.getElementById('createbtn').setAttribute('disabled', true);
 
             const xhr = new XMLHttpRequest();
