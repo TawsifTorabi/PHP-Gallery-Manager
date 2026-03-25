@@ -150,7 +150,7 @@ $total_pages = ceil($total_galleries / $records_per_page);
                     <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>">
                         <h5 class="card-title"><?php echo htmlspecialchars($gallery['title']); ?></h5>
                     </a>
-                    <p class="card-text"><?php echo htmlspecialchars($gallery['description']); ?></p>
+                    <p class="card-text"><?php echo $gallery['description']; ?></p>
                     <p class="text-muted">
                         <?php echo $images_count; ?> Images, <?php echo $videos_count; ?> Videos | Last updated: <?php echo $last_updated_formatted; ?>
                     </p>
