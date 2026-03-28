@@ -10,7 +10,8 @@ services:
 
     volumes:
       # Full project (includes uploads + thumbnails already)
-      - /mnt/satahdd1/disk1/php-gallery-manager:/var/www/html
+      - /mnt/satahdd1/disk1/php-gallery-manager:/var/www/html     # Mount the entire project directory to preserve uploads and thumbnails
+      - ./php.ini:/usr/local/etc/php/conf.d/uploads.ini           # Custom PHP configuration for uploads
 
     networks:
       - db-network

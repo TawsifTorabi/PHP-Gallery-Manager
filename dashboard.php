@@ -30,33 +30,6 @@ $result = $stmt->get_result();
 $galleries = $result->fetch_all(MYSQLI_ASSOC);
 
 
-
-// Function to calculate the size of a folder
-// function folderSize($dir)
-// {
-// $totalSize = 0;
-
-// // Open the directory
-// $files = scandir($dir);
-
-// // Loop through all files
-// foreach ($files as $file) {
-// if ($file !== "." && $file !== "..") {
-// $path = $dir . DIRECTORY_SEPARATOR . $file;
-
-// // If it's a directory, recursively calculate the size
-// if (is_dir($path)) {
-// $totalSize += folderSize($path);
-// } else {
-// // If it's a file, add the file size
-// $totalSize += filesize($path);
-// }
-// }
-// }
-
-// return $totalSize;
-// }
-
 function folderSize($dir)
 {
     $path = realpath($dir);

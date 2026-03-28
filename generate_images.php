@@ -138,6 +138,7 @@ if (!$gallery) {
             });
 
             xhr.onload = function() {
+                console.log(xhr.responseText); // Log the response for debugging
                 if (xhr.status === 200) {
                     alert('Gallery updated successfully!');
                     window.location.href = 'display_gallery.php?id=' + <?php echo $gallery_id; ?> + '&msg=true&msg_content=<?php echo urlencode('Updated Successfully'); ?>'; // Redirect on success

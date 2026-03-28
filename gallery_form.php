@@ -12,10 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = $_SESSION['user_id'];
     $title = $_POST['title'];
     $description = $_POST['description'];
-
+    $hero_images = '';
+    
     // Create a new gallery
-    $stmt = $conn->prepare("INSERT INTO galleries (title, description, created_by) VALUES (?, ?, ?)");
-    $stmt->bind_param("ssi", $title, $description, $user_id);
+    $stmt = $conn->prepare("INSERT INTO galleries (title, description, hero_images, created_by) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("sssi", $title, $description,$hero_images, $user_id);
     $stmt->execute();
     $gallery_id = $stmt->insert_id;
 
@@ -393,6 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             };
 
             xhr.onload = function() {
+                console.log(xhr.responseText); 
                 if (xhr.status === 200) {
                     const res = JSON.parse(xhr.responseText);
                     window.location.href = `display_gallery.php?id=${res.gallery_id}&msg=true&msg_content=Gallery Created!`;
