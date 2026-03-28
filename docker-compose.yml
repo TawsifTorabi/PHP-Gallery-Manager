@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  php-gallery-manager:
+    container_name: php-gallery-manager
+    build: .
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      # Full project (includes uploads + thumbnails already)
+      - /mnt/satahdd1/disk1/php-gallery-manager:/var/www/html
+
+    networks:
+      - db-network
+
+    restart: unless-stopped
+
+    # NOTE: 'deploy' works only in Docker Swarm, ignored in normal docker-compose
+    # Keeping it won't break anything, but it's not active
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2g
+
+networks:
+  db-network:
+    external: true

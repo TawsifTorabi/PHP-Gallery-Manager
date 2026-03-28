@@ -373,10 +373,11 @@ if (!$gallery) {
 
             xhr.onload = function() {
                 if (xhr.status === 200) {
-                    alert('Gallery updated successfully!');
-                    window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>';
+                    // alert('Gallery updated successfully!');
+                    window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>?msg=true&msg_content=' + encodeURIComponent("Gallery updated successfully!");
                 } else {
                     alert('Upload failed. Check server limits (post_max_size/upload_max_filesize).');
+                    // window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>?msg=false&msg_content=' + encodeURIComponent('Failed to update gallery.');
                     submitBtn.disabled = false;
                 }
             };

@@ -30,9 +30,13 @@ if (!file_exists($file_path)) {
 // Get the original image dimensions
 list($original_width, $original_height) = getimagesize($file_path);
 
-// Calculate the new height to maintain the aspect ratio
+
+
+// Calculate the new height and explicitly round to an integer
 $aspect_ratio = $original_height / $original_width;
-$desired_height = $width * $aspect_ratio;
+
+// Use round() and (int) to fix the Deprecated float warning
+$desired_height = (int)round($width * $aspect_ratio);
 
 // Create a new blank image with the desired size
 $resized_image = imagecreatetruecolor($width, $desired_height);

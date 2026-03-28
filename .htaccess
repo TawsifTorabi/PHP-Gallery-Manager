@@ -16,30 +16,19 @@
     ExpiresByType video/ogg "access plus 1 week"
 </IfModule>
 
-# Enable HTTP/2 Protocol
+# Enable HTTP/2 (only works if Apache supports it globally)
 <IfModule mod_http2.c>
     Protocols h2 http/1.1
 </IfModule>
 
-# Set MIME Types for Video Files
+# MIME Types
 <IfModule mod_mime.c>
     AddType video/mp4 .mp4
     AddType video/webm .webm
     AddType video/ogg .ogv
 </IfModule>
 
-# Prevent Download Blocking for Partial Content Requests
-<IfModule mod_filter.c>
-    FilterDeclare RANGE
-    FilterProvider RANGE HEAD resp=Content-Range
-    FilterProvider RANGE HEAD req=Range
-    FilterChain RANGE
-</IfModule>
-
-# Serve Pre-Encoded HLS or DASH Segments Efficiently
+# Rewrite rules
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^ - [L]
 </IfModule>

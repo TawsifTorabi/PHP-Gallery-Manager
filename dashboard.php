@@ -34,55 +34,65 @@ $galleries = $result->fetch_all(MYSQLI_ASSOC);
 // Function to calculate the size of a folder
 // function folderSize($dir)
 // {
-    // $totalSize = 0;
+// $totalSize = 0;
 
-    // // Open the directory
-    // $files = scandir($dir);
+// // Open the directory
+// $files = scandir($dir);
 
-    // // Loop through all files
-    // foreach ($files as $file) {
-        // if ($file !== "." && $file !== "..") {
-            // $path = $dir . DIRECTORY_SEPARATOR . $file;
+// // Loop through all files
+// foreach ($files as $file) {
+// if ($file !== "." && $file !== "..") {
+// $path = $dir . DIRECTORY_SEPARATOR . $file;
 
-            // // If it's a directory, recursively calculate the size
-            // if (is_dir($path)) {
-                // $totalSize += folderSize($path);
-            // } else {
-                // // If it's a file, add the file size
-                // $totalSize += filesize($path);
-            // }
-        // }
-    // }
+// // If it's a directory, recursively calculate the size
+// if (is_dir($path)) {
+// $totalSize += folderSize($path);
+// } else {
+// // If it's a file, add the file size
+// $totalSize += filesize($path);
+// }
+// }
+// }
 
-    // return $totalSize;
+// return $totalSize;
 // }
 
 function folderSize($dir)
 {
     $path = realpath($dir);
-    if (!$path) return 0;
+    if (!$path || !is_dir($path)) return 0;
 
-    // Use the Windows 'dir' command to get size
-    // /s = recursive, /-c = remove thousand separators
-    $command = 'dir /s /-c ' . escapeshellarg($path);
-    $output = shell_exec($command);
+    if (PHP_OS_FAMILY === 'Windows') {
+        // Windows Logic
+        // /s = recursive, /-c = remove thousand separators
+        $command = 'dir /s /-c ' . escapeshellarg($path);
+        $output = shell_exec($command);
 
-    if (!$output) return 0;
+        if (!$output) return 0;
 
-    // Look for the line that says "X File(s) Y bytes"
-    // We target the second-to-last line of the output
-    $lines = explode("\n", trim($output));
-    $lastLines = array_slice($lines, -2); 
+        $lines = explode("\n", trim($output));
+        $lastLines = array_slice($lines, -5); // Check last few lines for the byte count
 
-    foreach ($lastLines as $line) {
-        if (preg_match('/(\d+)\s+bytes/', $line, $matches)) {
-            return (float)$matches[1];
+        foreach ($lastLines as $line) {
+            if (preg_match('/(\d+)\s+bytes/', $line, $matches)) {
+                return (float)$matches[1];
+            }
         }
+    } else {
+        // Linux/Unix Logic
+        // -s = summary, -b = bytes
+        $command = "du -sb " . escapeshellarg($path);
+        $output = shell_exec($command);
+
+        if (!$output) return 0;
+
+        // du output format: "12345 /path/to/dir"
+        $parts = explode("\t", $output);
+        return (float)$parts[0];
     }
 
     return 0;
 }
-
 
 
 // Function to convert bytes to a human-readable format
