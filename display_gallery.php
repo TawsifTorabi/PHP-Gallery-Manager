@@ -19,7 +19,7 @@ $stmt->execute();
 $galleries = $stmt->get_result();
 
 // Fetch the number of images and videos, and the last updated time for the gallery
-$stmt_media = $conn->prepare("SELECT id, file_type, status, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
+$stmt_media = $conn->prepare("SELECT id, file_type, status, progress, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
 $stmt_media->bind_param("i", $gallery_id);
 $stmt_media->execute();
 $media_result = $stmt_media->get_result();
@@ -98,7 +98,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             /* Ensures no gaps, aspect ratio handled by flex */
             display: block;
             opacity: 0;
-            transition: opacity 0.4s ease-in-out;
+            transition: filter 0.5s ease, opacity 0.5s ease, transform 0.2s ease;
+            will-change: filter, opacity;
         }
 
         /* Show image when loaded via JS */
@@ -185,6 +186,13 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             font-size: 0.8rem;
             gap: 10px;
             backdrop-filter: blur(3px);
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+
+        /* Optional: added a nice "Success" flash when it finishes */
+        .media-item:not(.is-processing) {
+            transition: all 0.5s ease;
         }
 
         /* 7. SKELETON SHIMMER */
@@ -355,43 +363,6 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 }
                             });
                         }
-                        window.GlightboxDefine = function() {
-
-                            const lightbox = GLightbox({
-                                selector: '.my-lightbox-toggle', // Your selector
-                                touchNavigation: true,
-                                loop: false,
-                                openEffect: 'fade',
-                                closeEffect: 'fade',
-                                zoomable: true,
-                                draggable: true,
-                                backdrop: true,
-                                preload: 5,
-                                plyr: {
-                                    css: 'https://cdn.plyr.io/3.5.6/plyr.css', // Plyr CSS
-                                    js: 'https://cdn.plyr.io/3.5.6/plyr.js', // Plyr JS
-                                    config: {
-                                        ratio: '9:16', // Default ratio, can be changed dynamically
-                                        muted: false,
-                                        hideControls: true,
-                                        youtube: {
-                                            noCookie: true,
-                                            rel: 0,
-                                            showinfo: 0,
-                                            iv_load_policy: 3
-                                        },
-                                        vimeo: {
-                                            byline: false,
-                                            portrait: false,
-                                            title: false,
-                                            speed: true,
-                                            transparent: false
-                                        }
-                                    }
-                                }
-                            });
-
-                        };
                     </script>
 
                     <!-- Add the following CSS for the uniform image size and horizontal scroll effect -->
@@ -508,7 +479,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         while ($media = $media_result->fetch_assoc()):
                             // 2. Push each row into the array so JS can use it later
                             $media_files[] = $media;
-                            
+
                             $is_processing = ($media['file_type'] === 'video' && ($media['status'] === 'pending' || $media['status'] === 'processing'));
                         ?>
                             <div class="media-item skeleton media-style <?php echo $is_processing ? 'is-processing' : ''; ?>"
@@ -530,11 +501,17 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                         data-type="video">
 
                                         <?php if ($is_processing): ?>
-                                            <div class="processing-overlay">
+                                            <div class="processing-overlay" id="prog-container-<?php echo $media['id']; ?>">
                                                 <div class="spinner-border spinner-border-sm text-light" role="status"></div>
-                                                <span>Optimizing...</span>
+                                                <div class="progress w-75 mt-2" style="height: 10px; background: rgba(255,255,255,0.2);">
+                                                    <div id="bar-<?php echo $media['id']; ?>"
+                                                        class="progress-bar bg-success"
+                                                        style="width: <?php echo $media['progress']; ?>%"></div>
+                                                </div>
+                                                <small class="mt-1"><span id="pct-<?php echo $media['id']; ?>"><?php echo $media['progress']; ?></span>% Optimized</small>
                                             </div>
                                         <?php else: ?>
+
                                             <div class="play-button"><i class="fa-solid fa-circle-play"></i></div>
                                             <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
                                         <?php endif; ?>
@@ -794,6 +771,134 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     }
                 });
             }
+
+
+            // --- 3. POLLING FOR VIDEO COMPRESSION PROGRESS ---
+            function pollProgress() {
+                const processingItems = document.querySelectorAll('.media-item.is-processing');
+                if (processingItems.length === 0) return;
+
+                const ids = Array.from(processingItems).map(item => item.id.replace('mediaContent', ''));
+
+                fetch(`get_upload_progress.php?ids=${ids.join(',')}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        data.forEach(item => {
+                            const container = document.getElementById(`mediaContent${item.id}`);
+                            const bar = document.getElementById(`bar-${item.id}`);
+                            const pct = document.getElementById(`pct-${item.id}`);
+
+                            if (bar) bar.style.width = item.progress + '%';
+                            if (pct) pct.innerText = item.progress;
+
+                            // SEAMLESS TRANSITION WHEN READY
+                            if (item.status === 'ready') {
+                                const container = document.getElementById(`mediaContent${item.id}`);
+                                if (!container || !container.classList.contains('is-processing')) return;
+
+                                const link = container.querySelector('a');
+                                const img = container.querySelector('img');
+
+                                // 1. Force the Browser to ignore cached video versions with a timestamp
+                                const timestamp = new Date().getTime();
+                                const newVideoUrl = `uploads/${item.file_name}?v=${timestamp}`;
+
+                                // 2. Update the DOM Attributes
+                                container.classList.remove('is-processing');
+                                link.classList.remove('disabled-link');
+                                link.href = newVideoUrl;
+                                link.setAttribute('href', newVideoUrl);
+                                link.setAttribute('data-href', newVideoUrl); // GLightbox priority
+                                link.setAttribute('data-type', 'video');
+
+                                // 3. Cleanup UI Overlays
+                                const overlay = container.querySelector('.processing-overlay');
+                                if (overlay) {
+                                    overlay.style.opacity = '0';
+                                    setTimeout(() => overlay.remove(), 500);
+                                }
+
+                                // 4. Inject Play Button UI (if not already there)
+                                if (!container.querySelector('.play-button')) {
+                                    const playBtnHtml = `
+            <div class="play-button" style="pointer-events: none;"><i class="fa-solid fa-circle-play"></i></div>
+            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
+        `;
+                                    link.insertAdjacentHTML('afterbegin', playBtnHtml);
+                                }
+
+                                // 5. Handle Thumbnail Transition (Blur effect)
+                                img.style.filter = 'blur(10px)';
+                                img.style.transition = 'filter 0.5s ease';
+
+                                const newThumbUrl = `video_placeholder.php?file_name=${encodeURIComponent(item.file_name)}`;
+                                const tempImg = new Image();
+                                tempImg.src = newThumbUrl;
+                                tempImg.onload = () => {
+                                    img.src = newThumbUrl;
+                                    img.style.filter = 'none';
+                                    img.classList.add('loaded');
+                                };
+
+                                // 6. THE FIX: RE-BIND LIGHTBOX
+                                // This destroys the old object and creates a new one with the updated hrefs
+                                if (typeof window.GlightboxDefine === 'function') {
+                                    window.GlightboxDefine();
+                                }
+
+                                console.log(`Successfully transitioned Video ID: ${item.id} to Ready state.`);
+                            }
+                        });
+                    });
+            }
+
+            setInterval(pollProgress, 2000);
+
+
+            window.GlightboxDefine = function() {
+                // 1. If an instance already exists, kill it to clear the internal URL cache
+                if (window.currentLightboxInstance) {
+                    window.currentLightboxInstance.destroy();
+                }
+
+                // 2. Initialize a fresh instance that scans the current DOM
+                window.currentLightboxInstance = GLightbox({
+                    selector: '.my-lightbox-toggle',
+                    touchNavigation: true,
+                    loop: false,
+                    openEffect: 'fade',
+                    closeEffect: 'fade',
+                    zoomable: true,
+                    draggable: true,
+                    backdrop: true,
+                    preload: 5,
+                    plyr: {
+                        css: 'https://cdn.plyr.io/3.5.6/plyr.css',
+                        js: 'https://cdn.plyr.io/3.5.6/plyr.js',
+                        config: {
+                            ratio: '9:16',
+                            muted: false,
+                            hideControls: true,
+                            youtube: {
+                                noCookie: true,
+                                rel: 0,
+                                showinfo: 0,
+                                iv_load_policy: 3
+                            },
+                            vimeo: {
+                                byline: false,
+                                portrait: false,
+                                title: false,
+                                speed: true,
+                                transparent: false
+                            }
+                        }
+                    }
+                });
+            };
+
+            // Run it once on page load
+            document.addEventListener("DOMContentLoaded", window.GlightboxDefine);
         </script>
 
 </body>
