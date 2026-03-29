@@ -19,7 +19,7 @@ $stmt->execute();
 $galleries = $stmt->get_result();
 
 // Fetch the number of images and videos, and the last updated time for the gallery
-$stmt_media = $conn->prepare("SELECT id, file_type, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
+$stmt_media = $conn->prepare("SELECT id, file_type, status, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
 $stmt_media->bind_param("i", $gallery_id);
 $stmt_media->execute();
 $media_result = $stmt_media->get_result();
@@ -58,42 +58,94 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+
+
     <style>
-        .gallery-img {
-            /* cursor: pointer; */
-            width: auto;
-            /* max-height: 150px; */
-            height: 20rem;
-            object-fit: cover;
-            object-position: center;
-        }
-
-        .thumb-img {
-
-            object-fit: cover;
-            height: 20rem;
-            width: 100%;
-
-        }
-
-        .customDropdown {
-            position: absolute;
-            top: 4px;
-            right: 8px;
-            background: white;
-            width: 23px;
+        /* 1. GRID CONTAINER */
+        #mediaContainer {
             display: flex;
-            justify-content: center;
-            border-radius: 5px;
-            font-size: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px 0;
         }
 
+        /* 2. MEDIA ITEM (The Cloud Box) */
+        .media-item {
+            flex: 1 1 auto;
+            position: relative;
+            height: 300px;
+            /* Base height for all rows */
+            min-width: 150px;
+            /* Prevents tiny squeezed boxes */
+            background-color: #eee;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s ease, flex-basis 0.3s ease;
+        }
+
+        .media-item:hover {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+
+        /* 3. IMAGES & THUMBNAILS */
+        .media-item img,
+        .media-item .lazy-load,
+        .thumb-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Ensures no gaps, aspect ratio handled by flex */
+            display: block;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        /* Show image when loaded via JS */
+        .media-item img.loaded {
+            opacity: 1;
+        }
+
+        /* 4. ASPECT RATIO HINTS (Prevents Jumping) */
+        .is-portrait {
+            flex-basis: 180px;
+            /* Narrower reservation for vertical */
+        }
+
+        .is-landscape {
+            flex-basis: 450px;
+            /* Wider reservation for horizontal */
+        }
+
+        /* Ensure the last row doesn't stretch awkwardly to full width */
+        #mediaContainer::after {
+            content: "";
+            flex-grow: 999;
+        }
+
+        /* 5. OVERLAYS & UI ELEMENTS */
         .customCheckbox {
-            margin-right: 10px;
             position: absolute;
-            transform: scale(1.9);
             top: 12px;
-            left: 25px;
+            left: 12px;
+            z-index: 20;
+            transform: scale(1.5);
+            /* Sized for easy touch */
+            cursor: pointer;
+            accent-color: #0d6efd;
+        }
+
+        .video-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(4px);
+            z-index: 10;
         }
 
         .play-button {
@@ -101,14 +153,66 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 4rem;
-            border-radius: 50%;
-            background: none;
-            border: none;
+            font-size: 3.5rem;
             color: white;
-            text-shadow: -4px 3px 13px #0000002e;
+            opacity: 0.8;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.3s, transform 0.2s;
+            z-index: 5;
+            pointer-events: none;
+            /* Let clicks pass to the anchor tag */
+        }
+
+        .media-item:hover .play-button {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* 6. BACKGROUND COMPRESSION OVERLAY */
+        .processing-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 15;
+            font-size: 0.8rem;
+            gap: 10px;
+            backdrop-filter: blur(3px);
+        }
+
+        /* 7. SKELETON SHIMMER */
+        @keyframes shimmer {
+            0% {
+                background-position: -468px 0;
+            }
+
+            100% {
+                background-position: 468px 0;
+            }
+        }
+
+        .skeleton {
+            background: #f6f7f8;
+            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background-repeat: no-repeat;
+            background-size: 800px 100%;
+            animation: shimmer 1.5s infinite linear;
+        }
+
+        /* Helper for GLightbox/Videos still processing */
+        .disabled-link {
+            pointer-events: none;
+            filter: grayscale(0.5);
         }
     </style>
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/css/glightbox.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/js/glightbox.min.js"></script>
 </head>
@@ -287,15 +391,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 }
                             });
 
-
-
                         };
                     </script>
-
-
-                    <style>
-
-                    </style>
 
                     <!-- Add the following CSS for the uniform image size and horizontal scroll effect -->
                     <style>
@@ -399,53 +496,56 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         }
                     </style>
 
-                    <div class="row" id="mediaContainer">
+                    <div id="mediaContainer">
                         <?php
                         $stmt_media->execute();
                         $media_result = $stmt_media->get_result();
+
+                        // 1. Initialize the array here
                         $media_files = [];
-                        $i = 0;
-                        while ($media = $media_result->fetch_assoc()): $media_files[] = $media; ?>
-                            <div class="col-sm-3 col-6 m-auto mb-3 media-item media-style" id="mediaContent<?php echo $media['id']; ?>" data-type="<?php echo $media['file_type']; ?>">
+
+                        // Note: Ensure your SQL query in display_gallery.php includes the 'status' column
+                        while ($media = $media_result->fetch_assoc()):
+                            // 2. Push each row into the array so JS can use it later
+                            $media_files[] = $media;
+                            
+                            $is_processing = ($media['file_type'] === 'video' && ($media['status'] === 'pending' || $media['status'] === 'processing'));
+                        ?>
+                            <div class="media-item skeleton media-style <?php echo $is_processing ? 'is-processing' : ''; ?>"
+                                id="mediaContent<?php echo $media['id']; ?>"
+                                data-type="<?php echo $media['file_type']; ?>">
+
+                                <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" />
+
                                 <?php if ($media['file_type'] == 'image'): ?>
-                                    <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;" />
-
-                                    <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=800" class="my-lightbox-toggle" data-gallery="gallery" data-toggle="lightbox" rel="noopener noreferrer">
-                                        <img loading="lazy" style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400" class="img-fluid gallery-img" alt="Image" />
+                                    <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=1200" class="my-lightbox-toggle" data-gallery="gallery">
+                                        <img class="lazy-load"
+                                            data-src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400"
+                                            alt="Photo">
                                     </a>
-
-
-                                    <!-- <img style="border-radius: 15px;" src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>" class="img-fluid gallery-img" alt="Image" 
-                                        data-bs-toggle="modal" data-bs-target="#lightboxModal" data-index="<?php echo $i; ?>" 
-                                        onclick="openLightbox('<?php echo urlencode($media['file_type']); ?>','<?php echo urlencode($media['file_name']); ?>', <?php echo $i; ?>)"> -->
                                 <?php else: ?>
-                                    <div class="video-container media-style">
-                                        <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" style="margin-right: 10px;">
+                                    <a href="uploads/<?php echo $media['file_name']; ?>"
+                                        class="my-lightbox-toggle <?php echo $is_processing ? 'disabled-link' : ''; ?>"
+                                        data-gallery="gallery"
+                                        data-type="video">
 
-                                        <a href="uploads/<?php echo $media['file_name']; ?>" class="my-lightbox-toggle" data-gallery="gallery" data-type="video" data-toggle="lightbox" rel="noopener noreferrer">
-                                            <button id="videoplaybutton<?php echo $media['id']; ?>" class="play-button" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')"><i class="fa-solid fa-play"></i></button>
-                                            <img loading="lazy" style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" />
-                                        </a>
+                                        <?php if ($is_processing): ?>
+                                            <div class="processing-overlay">
+                                                <div class="spinner-border spinner-border-sm text-light" role="status"></div>
+                                                <span>Optimizing...</span>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="play-button"><i class="fa-solid fa-circle-play"></i></div>
+                                            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
+                                        <?php endif; ?>
 
-                                        <!-- <img style="border-radius: 15px;" id="videopreview<?php echo $media['id']; ?>" onclick="loadVideo(<?php echo $media['id']; ?>, '<?php echo $media['file_name']; ?>')" src="video_placeholder.php?file_name=<?php echo $media['file_name']; ?>" class="img-fluid thumb-img" alt="Video Placeholder" /> -->
-
-                                        <!-- <video class="img-fluid thumb-img" id="videoplayer<?php echo $media['id']; ?>" width="100%" controls preload="none" style="display: none;">
-                                            <source src="" type="video/mp4">
-                                            Your browser does not support the video tag.
-                                        </video> -->
-
-                                        <!-- Dropdown for video options -->
-                                        <div class="dropdown mt-2 customDropdown">
-                                            <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;"></i>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="generate_images.php?video_file=<?php echo $media['file_name']; ?>&gallery_id=<?php echo $gallery['id']; ?>">Generate Images</a></li>
-                                            </ul>
-                                        </div>
-                                    </div>
+                                        <img class="lazy-load"
+                                            data-src="video_placeholder.php?file_name=<?php echo urlencode($media['file_name']); ?>"
+                                            alt="Video Thumbnail">
+                                    </a>
                                 <?php endif; ?>
                             </div>
-                        <?php $i++;
-                        endwhile; ?>
+                        <?php endwhile; ?>
                     </div>
                 </div>
             </div>
@@ -513,8 +613,29 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
 
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Define GLightbox options
+            // --- 1. LAZY LOADING LOGIC ---
+            document.addEventListener("DOMContentLoaded", function() {
+                const lazyImages = document.querySelectorAll('img.lazy-load');
+
+                const imageObserver = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.onload = () => {
+                                img.classList.add('loaded');
+                                img.parentElement.closest('.media-item').classList.remove('skeleton');
+                            };
+                            observer.unobserve(img);
+                        }
+                    });
+                }, {
+                    rootMargin: '200px'
+                }); // Load images 200px before they appear
+
+                lazyImages.forEach(image => imageObserver.observe(image));
+
+                // Re-run GLightbox
                 GlightboxDefine();
             });
 
@@ -527,7 +648,15 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             }
 
             let currentIndex = 0;
+
+
+            // At the bottom of your file in the <script> tag
             const mediaFiles = <?php echo json_encode($media_files); ?>;
+
+            // If the array is empty, ensure it defaults to an empty array instead of null
+            if (!mediaFiles) {
+                const mediaFiles = [];
+            }
 
             function openLightbox(filetype, fileName, index) {
                 currentIndex = index;
@@ -652,12 +781,12 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                 }));
             }
 
-            // Filter media based on the selected option
+            // --- 2. IMPROVED FILTERING (Fixes Display Gaps) ---
             function filterMedia() {
                 const filter = document.getElementById('mediaFilter').value;
-                const mediaItems = document.querySelectorAll('.media-item');
+                const items = document.querySelectorAll('.media-item');
 
-                mediaItems.forEach(function(item) {
+                items.forEach(item => {
                     if (filter === 'all' || item.getAttribute('data-type') === filter) {
                         item.style.display = 'block';
                     } else {
