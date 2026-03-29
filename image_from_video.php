@@ -202,7 +202,7 @@ if (!$gallery) {
                                 role="progressbar" style="width: 0%">0%</div>
                         </div>
 
-                        <form id="uploadForm" action="gallery_update.php?id=<?php echo $gallery_id; ?>" method="post" enctype="multipart/form-data">
+                        <form id="uploadForm" action="gallery_update.php?id=<?php echo $gallery_id; ?>&input_src=image_from_video" method="post" enctype="multipart/form-data">
                             <input type="hidden" name="title" value="<?php echo htmlspecialchars($gallery['title']); ?>">
                             <textarea name="description" hidden><?php echo htmlspecialchars($gallery['description']); ?></textarea>
 
@@ -412,8 +412,9 @@ if (!$gallery) {
             };
 
             xhr.onload = () => {
+                console.log(xhr.responseText); // Log the response for debugging
                 if (xhr.status === 200) {
-                    window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true`;
+                    // window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true`;
                 } else {
                     alert("Upload failed. Server responded with status: " + xhr.status);
                     wrapper.classList.add('d-none');

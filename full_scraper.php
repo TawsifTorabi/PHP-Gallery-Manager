@@ -288,6 +288,7 @@ if (isset($_POST['create_gallery'])) {
 </head>
 
 <body class="container mt-4">
+    <?php include 'navbar.php'; ?>
 
     <h3>Universal Media Scraper</h3>
 

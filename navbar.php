@@ -4,6 +4,7 @@ $menu_items = [
   'dashboard.php' => 'Dashboard',
   'merge_gallery_view.php' => 'Merge Galleries',
   'gallery_form.php' => 'Create Gallery',
+  'full_scraper.php' => 'Web Scraper',
   'logout.php' => 'Logout' // You can easily add more items here
 ];
 
