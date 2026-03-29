@@ -142,7 +142,7 @@ if (!$gallery) {
 <body>
 
     <?php include 'navbar.php'; ?>
-    
+
 
     <div id="drop-overlay">DROP TO ADD TO GALLERY</div>
 
@@ -200,9 +200,13 @@ if (!$gallery) {
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="progress mb-4 d-none" id="progressWrapper" style="height: 25px;">
+                        <div class="progress mb-2 d-none" id="progressWrapper" style="height: 25px;">
                             <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success"
                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <div class="d-flex justify-content-between mb-4 small text-muted d-none" id="statsWrapper">
+                            <span id="uploadSpeed">Speed: 0 Mbps</span>
+                            <span id="uploadTime">Time Remaining: --</span>
                         </div>
 
                         <form id="uploadForm" action="gallery_update.php?id=<?php echo $gallery_id; ?>&input_src=image_from_video" method="post" enctype="multipart/form-data">
@@ -384,55 +388,101 @@ if (!$gallery) {
         }
 
         // --- 5. AJAX UPLOAD (FIXED) ---
-        document.getElementById('uploadForm').onsubmit = function(e) {
+        document.getElementById('uploadForm').onsubmit = async function(e) {
             e.preventDefault();
 
-            // 1. Prepare Data
-            const formData = new FormData(this);
-            fileQueue.forEach(file => {
-                formData.append('media[]', file);
-            });
-
-            // 2. Initialize XHR
-            const xhr = new XMLHttpRequest();
-
-            // 3. OPEN the connection (CRITICAL: Must happen before send)
-            xhr.open('POST', this.action, true);
-
-            // 4. Setup Progress UI
-            const wrapper = document.getElementById('progressWrapper');
+            const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB Chunks
+            const submitBtn = document.getElementById('submitBtn');
             const bar = document.getElementById('progressBar');
+            const wrapper = document.getElementById('progressWrapper');
+            const statsWrapper = document.getElementById('statsWrapper');
+            const speedLabel = document.getElementById('uploadSpeed');
+            const timeLabel = document.getElementById('uploadTime');
+
+            // UI State
             wrapper.classList.remove('d-none');
+            statsWrapper.classList.remove('d-none');
             submitBtn.disabled = true;
 
-            // 5. Setup Event Listeners
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const percent = Math.round((event.loaded / event.total) * 100);
-                    bar.style.width = percent + '%';
-                    bar.innerText = percent + '%';
+            // Global Progress Tracking
+            const totalBatchSize = fileQueue.reduce((acc, file) => acc + file.size, 0);
+            let totalBytesUploaded = 0;
+            const overallStartTime = Date.now();
+
+            // Process each file in the queue one by one
+            for (let i = 0; i < fileQueue.length; i++) {
+                const file = fileQueue[i];
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+                // Generate a unique identifier for this file
+                const identifier = btoa(file.name + file.size + '<?php echo $gallery_id; ?>').replace(/=/g, '');
+
+                for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                    const start = chunkIndex * CHUNK_SIZE;
+                    const end = Math.min(start + CHUNK_SIZE, file.size);
+                    const chunk = file.slice(start, end);
+                    const chunkStartTime = Date.now();
+
+                    const formData = new FormData();
+                    formData.append('file_chunk', chunk);
+                    formData.append('chunk_index', chunkIndex);
+                    formData.append('total_chunks', totalChunks);
+                    formData.append('identifier', identifier);
+                    formData.append('filename', file.name);
+                    formData.append('gallery_id', '<?php echo $gallery_id; ?>');
+                    // Check if it's a video for your worker logic
+                    formData.append('is_video', file.type.startsWith('video/') ? '1' : '0');
+
+                    try {
+                        const response = await fetch('gallery_update.php', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) throw new Error("Server Error");
+
+                        // --- SPEED & ETA CALCULATIONS ---
+                        const uploadedInThisChunk = (end - start);
+                        totalBytesUploaded += uploadedInThisChunk;
+
+                        const chunkDuration = (Date.now() - chunkStartTime) / 1000;
+
+                        // Calculate Speed in Mbps (Megabits)
+                        const mbps = ((uploadedInThisChunk * 8) / (1024 * 1024)) / chunkDuration;
+                        speedLabel.innerText = `Speed: ${mbps.toFixed(2)} Mbps`;
+
+                        // Calculate ETA
+                        const totalElapsed = (Date.now() - overallStartTime) / 1000;
+                        const avgSpeedBytes = totalBytesUploaded / totalElapsed;
+                        const remainingBytes = totalBatchSize - totalBytesUploaded;
+                        const secondsLeft = remainingBytes / avgSpeedBytes;
+
+                        if (secondsLeft > 0) {
+                            const mins = Math.floor(secondsLeft / 60);
+                            const secs = Math.round(secondsLeft % 60);
+                            timeLabel.innerText = `Time Remaining: ${mins}m ${secs}s`;
+                        }
+
+                        // Update Progress Bar
+                        const percent = (totalBytesUploaded / totalBatchSize) * 100;
+                        bar.style.width = percent + '%';
+
+                        // Units in GB
+                        const uploadedGB = (totalBytesUploaded / (1024 ** 3)).toFixed(2);
+                        const totalGB = (totalBatchSize / (1024 ** 3)).toFixed(2);
+                        bar.innerText = `${Math.round(percent)}% (${uploadedGB}GB / ${totalGB}GB)`;
+
+                    } catch (error) {
+                        console.error(error);
+                        alert("Upload failed at chunk " + chunkIndex + ". Check your laptop server connection.");
+                        submitBtn.disabled = false;
+                        return; // Stop the loop on error
+                    }
                 }
-            };
+            }
 
-            xhr.onload = () => {
-                console.log(xhr.responseText); // Log the response for debugging
-                if (xhr.status === 200) {
-                    window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true`;
-                } else {
-                    alert("Upload failed. Server responded with status: " + xhr.status);
-                    wrapper.classList.add('d-none');
-                    submitBtn.disabled = false;
-                }
-            };
-
-            xhr.onerror = () => {
-                alert("A network error occurred.");
-                wrapper.classList.add('d-none');
-                submitBtn.disabled = false;
-            };
-
-            // 6. SEND the request
-            xhr.send(formData);
+            // Success: Redirect back to the gallery
+            window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=success`;
         };
     </script>
 </body>
