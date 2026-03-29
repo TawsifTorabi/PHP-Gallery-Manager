@@ -141,6 +141,9 @@ if (!$gallery) {
 
 <body>
 
+    <?php include 'navbar.php'; ?>
+    
+
     <div id="drop-overlay">DROP TO ADD TO GALLERY</div>
 
     <div class="container mt-5 pb-5">
@@ -148,7 +151,7 @@ if (!$gallery) {
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
                     <h1>Update Gallery: <?php echo htmlspecialchars($gallery['title']); ?></h1>
-                    <a href="index.php" class="btn btn-outline-secondary">Back to List</a>
+                    <a href="display_gallery.php?id=<?php echo $gallery_id; ?>" class="btn btn-outline-secondary">Back to Gallery</a>
                 </div>
             </div>
         </div>
@@ -414,7 +417,7 @@ if (!$gallery) {
             xhr.onload = () => {
                 console.log(xhr.responseText); // Log the response for debugging
                 if (xhr.status === 200) {
-                    // window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true`;
+                    window.location.href = `display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true`;
                 } else {
                     alert("Upload failed. Server responded with status: " + xhr.status);
                     wrapper.classList.add('d-none');
