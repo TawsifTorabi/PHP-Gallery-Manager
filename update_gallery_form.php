@@ -245,15 +245,16 @@ if (!$gallery) {
                     };
                     div.appendChild(cropBtn);
                 } else if (file.type.startsWith('video/')) {
-                    if (videoToggle.checked) {
+                    if (videoToggle.checked && file.size < 100 * 1024 * 1024) { // Only preview if < 100MB
                         const video = document.createElement('video');
                         video.src = URL.createObjectURL(file);
+                        video.onloadedmetadata = () => URL.revokeObjectURL(video.src); // Clean up memory
                         video.controls = true;
                         div.appendChild(video);
                     } else {
                         const placeholder = document.createElement('div');
                         placeholder.className = 'video-placeholder';
-                        placeholder.innerHTML = `Video File<br>(${Math.round(file.size/1024/1024)}MB)`;
+                        placeholder.innerHTML = `Large Video<br>(${Math.round(file.size/1024/1024)}MB)`;
                         div.appendChild(placeholder);
                     }
                 }
@@ -262,6 +263,12 @@ if (!$gallery) {
         }
 
         function removeFile(index) {
+            // Find the preview element and revoke its object URL if it exists
+            const preview = mediaPreviewContainer.children[index];
+            const media = preview.querySelector('img, video');
+            if (media && media.src.startsWith('blob:')) {
+                URL.revokeObjectURL(media.src);
+            }
             selectedFiles.splice(index, 1);
             syncInput();
         }
@@ -304,86 +311,140 @@ if (!$gallery) {
 
         // Form Submission with Progress Bar
         // Form Submission with Progress Bar, Speed, and ETA
-        document.getElementById('galleryForm').addEventListener('submit', function(e) {
+        document.getElementById('galleryForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             if (descriptionEditor) document.getElementById('description').value = descriptionEditor.getData();
 
-            const formData = new FormData(this);
-            formData.delete('media[]');
-            selectedFiles.forEach(file => formData.append('media[]', file));
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('POST', this.action, true);
-
-            progressWrapper.style.display = 'block';
+            const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
             const submitBtn = document.getElementById('submitBtn');
+            const totalFiles = selectedFiles.length;
+
+            // UI Elements
+            const speedLabel = document.getElementById('uploadSpeed');
+            const timeLabel = document.getElementById('uploadTime');
+            const progressWrapper = document.getElementById('progressWrapper');
+            const progressBar = document.getElementById('progressBar');
+
             submitBtn.disabled = true;
+            progressWrapper.style.display = 'block';
 
-            // Tracking variables for speed
-            let startTime = Date.now();
-            let lastTime = startTime;
-            let lastLoaded = 0;
+            // Calculate Total Size for the whole batch
+            const totalBatchSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+            let totalBytesUploaded = 0;
+            const overallStartTime = Date.now();
 
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const now = Date.now();
-                    const timeDiff = (now - lastTime) / 1000; // seconds passed since last update
+            // 1. Meta Data Sync (Quick Title/Desc Update)
+            const metaData = new FormData();
+            metaData.append('gallery_id', '<?php echo $gallery_id; ?>');
+            metaData.append('title', document.getElementById('title').value);
+            metaData.append('description', document.getElementById('description').value);
+            metaData.append('is_meta_only', 'true');
+            await fetch('gallery_update.php', {
+                method: 'POST',
+                body: metaData
+            });
 
-                    // Update speed stats every 500ms to avoid flickering
-                    if (timeDiff >= 0.5 || event.loaded === event.total) {
-                        const loadedDiff = event.loaded - lastLoaded;
-                        const bps = loadedDiff / timeDiff; // Bytes per second
+            // 2. File Upload Loop
+            for (let fileIndex = 0; fileIndex < totalFiles; fileIndex++) {
+                const file = selectedFiles[fileIndex];
+                const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+                const identifier = btoa(file.name + file.size + '<?php echo $gallery_id; ?>').replace(/=/g, '');
 
-                        // 1. Calculate and Format Speed
-                        let speedText = "Speed: ";
-                        if (bps > 1024 * 1024) {
-                            speedText += (bps / (1024 * 1024)).toFixed(2) + " MB/s";
-                        } else {
-                            speedText += (bps / 1024).toFixed(2) + " KB/s";
+                for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+                    let success = false;
+
+                    while (!success) {
+                        try {
+                            const chunkStartTime = Date.now();
+                            const start = chunkIndex * CHUNK_SIZE;
+                            const end = Math.min(start + CHUNK_SIZE, file.size);
+                            const chunk = file.slice(start, end);
+
+                            const chunkForm = new FormData();
+                            chunkForm.append('file_chunk', chunk);
+                            chunkForm.append('chunk_index', chunkIndex);
+                            chunkForm.append('total_chunks', totalChunks);
+                            chunkForm.append('identifier', identifier);
+                            chunkForm.append('filename', file.name);
+                            chunkForm.append('gallery_id', '<?php echo $gallery_id; ?>');
+
+                            const response = await fetch('gallery_update.php', {
+                                method: 'POST',
+                                body: chunkForm
+                            });
+
+                            if (!response.ok) throw new Error("Server Error");
+
+                            success = true;
+
+                            // --- SPEED & ETA CALCULATIONS ---
+                            totalBytesUploaded += (end - start);
+
+                            // 1. Calculate Duration and Bytes for this chunk
+                            const chunkEndTime = Date.now();
+                            const durationInSeconds = (chunkEndTime - chunkStartTime) / 1000;
+
+                            // 2. Convert to Megabits (Bytes * 8 / 1024 / 1024)
+                            const bitsUploaded = (end - start) * 8;
+                            const mbps = (bitsUploaded / (1024 * 1024)) / durationInSeconds;
+
+                            // 3. Display with "Mbps" label
+                            if (mbps > 1000) {
+                                speedLabel.innerText = `Speed: ${(mbps / 1024).toFixed(2)} Gbps`;
+                            } else {
+                                speedLabel.innerText = `Speed: ${mbps.toFixed(2)} Mbps`;
+                            }
+
+                            // 4. Calculate ETA using Average Speed (in Bytes per second)
+                            const totalDurationSoFar = (Date.now() - overallStartTime) / 1000;
+                            const avgSpeedBytes = totalBytesUploaded / totalDurationSoFar;
+                            const bytesRemaining = totalBatchSize - totalBytesUploaded;
+                            const secondsRemaining = bytesRemaining / avgSpeedBytes;
+
+                            if (secondsRemaining > 0) {
+                                const hours = Math.floor(secondsRemaining / 3600);
+                                const mins = Math.floor((secondsRemaining % 3600) / 60);
+                                const secs = Math.round(secondsRemaining % 60);
+
+                                let timeStr = `Time Remaining: `;
+                                if (hours > 0) timeStr += `${hours}h `;
+                                timeStr += `${mins}m ${secs}s`;
+                                timeLabel.innerText = timeStr;
+                            }
+
+                            // 5. Update Progress Bar with GB units
+                            const overallPercent = (totalBytesUploaded / totalBatchSize) * 100;
+                            progressBar.style.width = overallPercent + '%';
+                            const uploadedGB = (totalBytesUploaded / (1024 ** 3)).toFixed(2);
+                            const totalGB = (totalBatchSize / (1024 ** 3)).toFixed(2);
+                            progressBar.innerHTML = `${Math.round(overallPercent)}% (${uploadedGB}GB / ${totalGB}GB)`;
+
+                        } catch (error) {
+                            console.error("Upload failed", error);
+                            progressBar.classList.replace('bg-primary', 'bg-danger');
+
+                            let retryBtn = document.getElementById('retryBtn');
+                            if (!retryBtn) {
+                                retryBtn = document.createElement('button');
+                                retryBtn.id = 'retryBtn';
+                                retryBtn.className = "btn btn-warning w-100 mt-2";
+                                retryBtn.innerText = "Connection Lost. Click to Retry";
+                                progressWrapper.after(retryBtn);
+                            }
+                            retryBtn.style.display = 'block';
+
+                            await new Promise(resolve => {
+                                retryBtn.onclick = () => {
+                                    retryBtn.style.display = 'none';
+                                    progressBar.classList.replace('bg-danger', 'bg-primary');
+                                    resolve();
+                                };
+                            });
                         }
-
-                        // 2. Calculate and Format ETA (Time Remaining)
-                        const remainingBytes = event.total - event.loaded;
-                        const secondsRemaining = remainingBytes / bps;
-                        let etaText = "Time Remaining: ";
-
-                        if (isFinite(secondsRemaining) && bps > 0) {
-                            const mins = Math.floor(secondsRemaining / 60);
-                            const secs = Math.round(secondsRemaining % 60);
-                            etaText += mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-                        } else {
-                            etaText += "Calculating...";
-                        }
-
-                        // 3. UPDATE THE ACTUAL HTML ELEMENTS
-                        document.getElementById('uploadSpeed').innerText = speedText;
-                        document.getElementById('uploadTime').innerText = etaText;
-
-                        // Update trackers for the next calculation
-                        lastTime = now;
-                        lastLoaded = event.loaded;
                     }
-
-                    // Update Progress Bar
-                    const pct = Math.round((event.loaded / event.total) * 100);
-                    progressBar.style.width = pct + '%';
-                    progressBar.innerHTML = pct + '%';
                 }
-            };
-
-            xhr.onload = function() {
-                console.log(xhr.responseText); // Log the response for debugging
-                if (xhr.status === 200) {
-                    // alert('Gallery updated successfully!');
-                    window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>?msg=true&msg_content=' + encodeURIComponent("Gallery updated successfully!");
-                } else {
-                    alert('Upload failed. Check server limits (post_max_size/upload_max_filesize).');
-                    // window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>?msg=false&msg_content=' + encodeURIComponent('Failed to update gallery.');
-                    submitBtn.disabled = false;
-                }
-            };
-
-            xhr.send(formData);
+            }
+            window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true';
         });
 
         videoToggle.onchange = renderPreviews;
