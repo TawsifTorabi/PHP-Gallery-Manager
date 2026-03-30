@@ -1,8 +1,10 @@
-version: "3.9"
+version: "2.4"
 
 services:
   php-gallery-manager:
     container_name: php-gallery-manager
+    # --- ADD THIS LINE ---
+    image: xceptionist/gallery-app:latest 
     build: .
     ports:
       - "8080:80"
@@ -12,29 +14,23 @@ services:
     networks:
       - db-network
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0" # Keep web UI snappy
-          memory: 1g
+    cpus: 1.0
+    mem_limit: 1g
 
-  # --- ADDED WORKER SERVICE ---
   php-video-worker:
     container_name: php-video-worker
+    # --- ADD THIS LINE ---
+    image: xceptionist/gallery-worker:latest
     build: .
-    # This overrides the default Apache/FPM start command
     command: php /var/www/html/worker.php 
     volumes:
       - /mnt/satahdd1/disk1/php-gallery-manager:/var/www/html
       - ./php.ini:/usr/local/etc/php/conf.d/uploads.ini
     networks:
       - db-network
-    restart: always # Ensure it starts immediately after power-on
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0" # Give the worker more power for FFmpeg
-          memory: 2g
+    restart: always
+    cpus: 2.0
+    mem_limit: 2g
 
 networks:
   db-network:

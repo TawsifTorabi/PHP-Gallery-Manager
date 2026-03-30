@@ -787,13 +787,22 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                             const container = document.getElementById(`mediaContent${item.id}`);
                             const bar = document.getElementById(`bar-${item.id}`);
                             const pct = document.getElementById(`pct-${item.id}`);
+                            // Select the text label inside the processing overlay
+                            const statusLabel = container.querySelector('.status-label');
 
-                            if (bar) bar.style.width = item.progress + '%';
-                            if (pct) pct.innerText = item.progress;
+                            // --- QUEUE & PROGRESS UI UPDATE ---
+                            if (item.status === 'pending') {
+                                if (bar) bar.style.width = '0%';
+                                if (pct) pct.innerText = '0';
+                                if (statusLabel) statusLabel.innerText = `In Queue: #${item.queue_pos}`;
+                            } else if (item.status === 'processing') {
+                                if (bar) bar.style.width = item.progress + '%';
+                                if (pct) pct.innerText = item.progress;
+                                if (statusLabel) statusLabel.innerText = `Compressing...`;
+                            }
 
                             // SEAMLESS TRANSITION WHEN READY
                             if (item.status === 'ready') {
-                                const container = document.getElementById(`mediaContent${item.id}`);
                                 if (!container || !container.classList.contains('is-processing')) return;
 
                                 const link = container.querySelector('a');
@@ -821,9 +830,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 // 4. Inject Play Button UI (if not already there)
                                 if (!container.querySelector('.play-button')) {
                                     const playBtnHtml = `
-            <div class="play-button" style="pointer-events: none;"><i class="fa-solid fa-circle-play"></i></div>
-            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
-        `;
+                            <div class="play-button" style="pointer-events: none;"><i class="fa-solid fa-circle-play"></i></div>
+                            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
+                        `;
                                     link.insertAdjacentHTML('afterbegin', playBtnHtml);
                                 }
 
@@ -841,7 +850,6 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 };
 
                                 // 6. THE FIX: RE-BIND LIGHTBOX
-                                // This destroys the old object and creates a new one with the updated hrefs
                                 if (typeof window.GlightboxDefine === 'function') {
                                     window.GlightboxDefine();
                                 }
