@@ -11,7 +11,7 @@ $input_file = 'uploads/' . $video['file_name'];
 $duration_cmd = "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 " . escapeshellarg($input_file);
 $total_duration = (float)shell_exec($duration_cmd);
 
-$output_file = 'uploads/cmprsd_' . bin2hex(random_bytes(4)) . '.mp4';
+$output_file = 'uploads/cmprsd_' . bin2hex(random_bytes(4)) . '-' . time() . '.mp4';
 
 // 3. Run FFmpeg and capture progress
 // We use '-progress' to send status to a pipe/file

@@ -1,4 +1,7 @@
 <?php
+
+// This script compares the imageHash_hamming values of all images in the database to find potential duplicates based on a Hamming Distance threshold.
+
 // Database connection
 $host = 'localhost';
 $username = 'root';
