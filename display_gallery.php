@@ -860,7 +860,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     });
             }
 
-            setInterval(pollProgress, 2000);
+            setInterval(pollProgress, 2000); // Poll every 5 seconds
 
 
             window.GlightboxDefine = function() {
