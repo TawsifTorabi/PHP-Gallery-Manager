@@ -444,7 +444,7 @@ if (!$gallery) {
                     }
                 }
             }
-            // window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true';
+            window.location.href = 'display_gallery.php?id=<?php echo $gallery_id; ?>&msg=true';
         });
 
         videoToggle.onchange = renderPreviews;

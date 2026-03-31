@@ -515,9 +515,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                                 <div class="progress w-75 mt-2" style="height: 5px; background: rgba(255,255,255,0.2);">
                                                     <div id="bar-<?php echo $media['id']; ?>"
                                                         class="progress-bar bg-success"
-                                                        style="width: <?php echo $media['progress']; ?>%"></div>
+                                                        style="width: <?php echo $media['progress']; ?>% Processing"></div>
                                                 </div>
-                                                <small style="font-size: 9px;"><span id="pct-<?php echo $media['id']; ?>"><?php echo $media['progress']; ?></span>%</small>
+                                                <small style="font-size: 9px;"><span id="pct-<?php echo $media['id']; ?>"><?php echo $media['progress']; ?></span>% Processing</small>
                                             </div>
                                         <?php else: ?>
                                             <div class="play-button"><i class="fa-solid fa-circle-play"></i></div>

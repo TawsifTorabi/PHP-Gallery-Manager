@@ -60,20 +60,44 @@ if ($chunk_index === $total_chunks - 1) {
         // Optional: Trigger your existing WebP to JPG conversion here if needed
 
         $status = ($media_type === 'video') ? 'pending' : 'ready';
+
         $imagehash = ($media_type === 'image') ? getImageHash($target_path) : '';
-        $dimension = ($media_type === 'image') ? getimagesize($target_path) : null;
-        $dimension_str = ($dimension) ? $dimension[0] . 'x' . $dimension[1] : null;
+        $dimension = null;
         
+        if ($media_type === 'video') {
+            $cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 " . escapeshellarg($target_path);
+            $dimension = trim(shell_exec($cmd));
+        } else {
+            $size = @getimagesize($target_path);
+            if ($size) {
+                $dimension = $size[0] . "x" . $size[1];
+            }
+        }
+
         // Database Insert
         $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, dimension, file_type, imageHash_hamming, status) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssss", $gallery_id, $final_file_name, $dimension_str, $media_type, $imagehash, $status);
+        $stmt->bind_param("isssss", $gallery_id, $final_file_name, $dimension, $media_type, $imagehash, $status);
 
         if ($stmt->execute()) {
             $new_id = $stmt->insert_id;
             if ($media_type === 'video') {
                 // Trigger background FFmpeg compression
                 $bg_cmd = "php " . __DIR__ . "/compress_video.php $new_id > /dev/null 2>&1 &";
-                shell_exec($bg_cmd);
+
+                /**
+                 * Note: In the current implementation of worker.php, we are designed to run one ffmpeg process at a time and it waits 
+                 * for that process to finish before claiming the next task.
+                 * This means that we won't have multiple concurrent ffmpeg processes that could cause CPU spikes or hangs on SATA disks, 
+                 * so we can safely use shell_exec to run the compression script in the background without worrying about non-blocking issues 
+                 * in this specific context.
+                 * If we were to modify the worker to allow multiple concurrent ffmpeg processes in the future, 
+                 * we would need to revisit this decision and potentially implement non-blocking I/O to prevent hangs. 
+                 * For now, using shell_exec with an appended '&' allows us to run the compression script in the background without blocking the response, 
+                 * which is suitable for our current worker design.
+                 */
+                
+                // shell_exec($bg_cmd); // This will run the compression script in the background without blocking the response
+
             }
             echo json_encode(['status' => 'complete', 'file_id' => $new_id]);
         }

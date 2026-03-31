@@ -45,6 +45,7 @@ $descriptorspec = array(
 );
 
 echo "[*] Compressing ID $image_id...\n";
+
 $process = proc_open($cmd, $descriptorspec, $pipes);
 
 if (is_resource($process)) {
