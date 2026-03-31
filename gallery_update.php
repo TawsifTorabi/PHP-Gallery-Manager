@@ -61,10 +61,12 @@ if ($chunk_index === $total_chunks - 1) {
 
         $status = ($media_type === 'video') ? 'pending' : 'ready';
         $imagehash = ($media_type === 'image') ? getImageHash($target_path) : '';
-
+        $dimension = ($media_type === 'image') ? getimagesize($target_path) : null;
+        $dimension_str = ($dimension) ? $dimension[0] . 'x' . $dimension[1] : null;
+        
         // Database Insert
-        $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, file_type, imageHash_hamming, status) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issss", $gallery_id, $final_file_name, $media_type, $imagehash, $status);
+        $stmt = $conn->prepare("INSERT INTO images (gallery_id, file_name, dimension, file_type, imageHash_hamming, status) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssss", $gallery_id, $final_file_name, $dimension_str, $media_type, $imagehash, $status);
 
         if ($stmt->execute()) {
             $new_id = $stmt->insert_id;

@@ -19,7 +19,7 @@ $stmt->execute();
 $galleries = $stmt->get_result();
 
 // Fetch the number of images and videos, and the last updated time for the gallery
-$stmt_media = $conn->prepare("SELECT id, file_type, status, progress, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
+$stmt_media = $conn->prepare("SELECT id, file_type, dimension, status, progress, file_name, uploaded_at FROM images WHERE gallery_id = ? ORDER BY uploaded_at DESC");
 $stmt_media->bind_param("i", $gallery_id);
 $stmt_media->execute();
 $media_result = $stmt_media->get_result();
@@ -467,56 +467,65 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         }
                     </style>
 
-                    <div id="mediaContainer">
+                    <div id="mediaContainer" class="media-grid">
                         <?php
                         $stmt_media->execute();
                         $media_result = $stmt_media->get_result();
-
-                        // 1. Initialize the array here
                         $media_files = [];
 
-                        // Note: Ensure your SQL query in display_gallery.php includes the 'status' column
                         while ($media = $media_result->fetch_assoc()):
-                            // 2. Push each row into the array so JS can use it later
                             $media_files[] = $media;
+
+                            // 1. Extract Ratio (e.g., 1920/1080)
+                            $ratio = "1 / 1"; // Square fallback
+                            if (!empty($media['dimension']) && strpos($media['dimension'], 'x') !== false) {
+                                $dims = explode('x', $media['dimension']);
+                                if (count($dims) === 2 && (int)$dims[1] > 0) {
+                                    // We use the raw numbers for the CSS aspect-ratio property
+                                    $ratio = (int)$dims[0] . " / " . (int)$dims[1];
+                                }
+                            }
 
                             $is_processing = ($media['file_type'] === 'video' && ($media['status'] === 'pending' || $media['status'] === 'processing'));
                         ?>
                             <div class="media-item skeleton media-style <?php echo $is_processing ? 'is-processing' : ''; ?>"
                                 id="mediaContent<?php echo $media['id']; ?>"
-                                data-type="<?php echo $media['file_type']; ?>">
+                                data-type="<?php echo $media['file_type']; ?>"
+                                style="aspect-ratio: <?php echo $ratio; ?>; position: relative;">
 
                                 <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" />
 
                                 <?php if ($media['file_type'] == 'image'): ?>
-                                    <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=1200" class="my-lightbox-toggle" data-gallery="gallery">
+                                    <a href="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=1200"
+                                        class="my-lightbox-toggle"
+                                        style="display: block; width: 100%; height: 100%;">
                                         <img class="lazy-load"
+                                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
                                             data-src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400"
                                             alt="Photo">
                                     </a>
                                 <?php else: ?>
                                     <a href="uploads/<?php echo $media['file_name']; ?>"
                                         class="my-lightbox-toggle <?php echo $is_processing ? 'disabled-link' : ''; ?>"
-                                        data-gallery="gallery"
-                                        data-type="video">
+                                        style="display: block; width: 100%; height: 100%; position: relative;">
 
                                         <?php if ($is_processing): ?>
                                             <div class="processing-overlay" id="prog-container-<?php echo $media['id']; ?>">
                                                 <div class="spinner-border spinner-border-sm text-light" role="status"></div>
-                                                <div class="progress w-75 mt-2" style="height: 10px; background: rgba(255,255,255,0.2);">
+                                                <div class="progress w-75 mt-2" style="height: 5px; background: rgba(255,255,255,0.2);">
                                                     <div id="bar-<?php echo $media['id']; ?>"
                                                         class="progress-bar bg-success"
                                                         style="width: <?php echo $media['progress']; ?>%"></div>
                                                 </div>
-                                                <small class="mt-1"><span id="pct-<?php echo $media['id']; ?>"><?php echo $media['progress']; ?></span>% Optimized</small>
+                                                <small style="font-size: 9px;"><span id="pct-<?php echo $media['id']; ?>"><?php echo $media['progress']; ?></span>%</small>
                                             </div>
                                         <?php else: ?>
-
                                             <div class="play-button"><i class="fa-solid fa-circle-play"></i></div>
                                             <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
                                         <?php endif; ?>
 
                                         <img class="lazy-load"
+                                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
                                             data-src="video_placeholder.php?file_name=<?php echo urlencode($media['file_name']); ?>"
                                             alt="Video Thumbnail">
                                     </a>

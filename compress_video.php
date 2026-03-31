@@ -35,7 +35,7 @@ $output_file = 'uploads/' . $output_name;
 // -movflags +faststart: Allows video to play while downloading (B2B requirement)
 $cmd = "ffmpeg -y -i " . escapeshellarg($input_file) . 
        " -vf \"scale='if(gt(iw,ih),min(1920,iw),-2)':'if(gt(iw,ih),-2,min(1080,ih))',pad=ceil(iw/2)*2:ceil(ih/2)*2\" " .
-       " -vcodec libx264 -crf 28 -preset faster -c:a aac -b:a 128k -movflags +faststart -progress pipe:1 " . 
+       " -vcodec libx264 -crf 32 -preset faster -c:a aac -b:a 128k -movflags +faststart -progress pipe:1 " . 
        escapeshellarg($output_file);
 
 $descriptorspec = array(

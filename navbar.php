@@ -114,9 +114,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <style>
   #darkModeBtn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
     width: 45px;
     height: 45px;
     border-radius: 50%;
@@ -125,7 +122,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
     color: #fff;
     font-size: 18px;
     cursor: pointer;
-    z-index: 9999;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
     transition: all 0.3s ease;
   }
@@ -143,7 +139,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">Gallery</a>
+    <span class="navbar-brand">
+      Gallery
+      <button onclick="toggledarkmode()" id="darkModeBtn">
+        🌙
+      </button>
+    </span>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -158,10 +159,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
               <?php echo $title; ?>
             </a>
           </li>
+
         <?php endforeach; ?>
-        <button onclick="toggledarkmode()" id="darkModeBtn">
-          🌙
-        </button>
       </ul>
 
       <!-- Search bar -->
