@@ -4,3 +4,5 @@ thumbnails/
 duplicates.json
 lost/
 ffmpeg_manual_errors.log
+cache/
+node_modules/

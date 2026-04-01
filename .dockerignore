@@ -1,4 +1,9 @@
-uploads/
-thumbnails/
 .git
 node_modules/
+.vscode/
+uploads/
+thumbnails/
+duplicates.json
+lost/
+ffmpeg_manual_errors.log
+cache/

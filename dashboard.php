@@ -29,7 +29,6 @@ $stmt->execute();
 $result = $stmt->get_result();
 $galleries = $result->fetch_all(MYSQLI_ASSOC);
 
-
 function folderSize($dir)
 {
     $path = realpath($dir);
@@ -119,6 +118,118 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #4285f4;
+            --surface-color: #ffffff;
+            --bg-color: #f8f9fa;
+            --text-main: #1f1f1f;
+            --border-radius: 16px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* Dashboard Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+            padding: 20px 0;
+        }
+
+        /* Google-style Card */
+        .gallery-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e0e0e0;
+            position: relative;
+            height: 100%;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Image Preview Stack */
+        .card-preview {
+            height: 200px;
+            background: #eee;
+            position: relative;
+            display: flex;
+        }
+
+        .preview-main {
+            width: 66%;
+            height: 100%;
+            object-fit: cover;
+            border-right: 2px solid white;
+        }
+
+        .preview-side {
+            width: 34%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-sub {
+            height: 50%;
+            width: 100%;
+            object-fit: cover;
+            border-bottom: 2px solid white;
+        }
+
+        /* Content Info */
+        .card-body-content {
+            padding: 16px;
+        }
+
+        .card-title-link {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-main);
+            text-decoration: none;
+        }
+
+        .card-meta {
+            font-size: 0.85rem;
+            color: #70757a;
+            margin-top: 4px;
+        }
+
+        /* Action Buttons Overlay */
+        .card-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .gallery-card:hover .card-actions {
+            opacity: 1;
+        }
+
+        .btn-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            margin-bottom: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 
 <body>
