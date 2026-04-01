@@ -208,7 +208,7 @@ while (true) {
                     echo "[IMG] ID {$img['id']}: " . round($old_size / 1024, 1) . " KB -> ";
 
                     // Compression Command
-                    $cmd = "mogrify -strip -auto-orient -resize '1500x1500>' -quality 85 -sampling-factor 4:2:0 " . escapeshellarg($path);
+                    $cmd = "mogrify -strip -auto-orient -resize '1500x1500>' -quality 90 -sampling-factor 4:2:0 " . escapeshellarg($path);
                     shell_exec($cmd);
 
                     // Clear cache to get the NEW size

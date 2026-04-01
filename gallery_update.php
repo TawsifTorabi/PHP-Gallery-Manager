@@ -55,6 +55,26 @@ if ($chunk_index === $total_chunks - 1) {
 
     if (rename($temp_file, $target_path)) {
         $file_type = mime_content_type($target_path);
+
+        // --- WebP SUPPORT START ---
+        // If it's a WebP, convert it to JPG immediately because GD doesn't support it
+        if ($file_ext === 'webp' || $file_type === 'image/webp') {
+            $jpg_name = $unique_base . '.jpg';
+            $jpg_path = $upload_dir . $jpg_name;
+
+            // ImageMagick convert (using -flatten to handle transparency/alpha channel)
+            $convert_cmd = "convert " . escapeshellarg($target_path) . " -flatten " . escapeshellarg($jpg_path);
+            shell_exec($convert_cmd);
+
+            if (file_exists($jpg_path)) {
+                unlink($target_path); // Delete the original .webp
+                $final_file_name = $jpg_name;
+                $target_path = $jpg_path;
+                $file_type = 'image/jpeg';
+            }
+        }
+        // --- WebP SUPPORT END ---
+
         $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
 
         // Optional: Trigger your existing WebP to JPG conversion here if needed
@@ -63,7 +83,7 @@ if ($chunk_index === $total_chunks - 1) {
 
         $imagehash = ($media_type === 'image') ? getImageHash($target_path) : '';
         $dimension = null;
-        
+
         if ($media_type === 'video') {
             $cmd = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 " . escapeshellarg($target_path);
             $dimension = trim(shell_exec($cmd));
@@ -95,7 +115,7 @@ if ($chunk_index === $total_chunks - 1) {
                  * For now, using shell_exec with an appended '&' allows us to run the compression script in the background without blocking the response, 
                  * which is suitable for our current worker design.
                  */
-                
+
                 // shell_exec($bg_cmd); // This will run the compression script in the background without blocking the response
 
             }
