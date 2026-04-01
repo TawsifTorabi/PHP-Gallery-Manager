@@ -1,8 +1,9 @@
 FROM php:8.2-apache
 
-# Install system dependencies + FFmpeg + PHP extensions dependencies
+# Install system dependencies + FFmpeg + ImageMagick + PHP extensions
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    imagemagick \
     git \
     zip \
     unzip \

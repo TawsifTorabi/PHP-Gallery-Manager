@@ -190,8 +190,61 @@ while (true) {
                 echo "[*] STARTED ID {$video['id']} FROM Gallery {$video['gallery_id']} (" . round(filesize($input) / 1048576, 2) . " MB)\n";
             }
         } else {
-            sleep(5);
+           
+            // CHANGE: Added 'ready' to ensure we don't grab half-uploaded or already-processing files
+            // 2. If no videos, find an IMAGE to compress
+            $conn->query("UPDATE images SET status = 'processing', worker_id = '$temp_uuid' 
+                          WHERE status = 'ready' AND file_type = 'image' ORDER BY id DESC LIMIT 1");
+
+            $img_res = $conn->query("SELECT id, file_name FROM images WHERE file_type = 'image' AND worker_id = '$temp_uuid' LIMIT 1");
+
+            if ($img = $img_res->fetch_assoc()) {
+                $path = $upload_dir . $img['file_name'];
+
+                if (file_exists($path) && filesize($path) > 0) {
+                    // Capture original size
+                    $old_size = filesize($path);
+
+                    echo "[IMG] ID {$img['id']}: " . round($old_size / 1024, 1) . " KB -> ";
+
+                    // Compression Command
+                    $cmd = "mogrify -strip -auto-orient -resize '1500x1500>' -quality 85 -sampling-factor 4:2:0 " . escapeshellarg($path);
+                    shell_exec($cmd);
+
+                    // Clear cache to get the NEW size
+                    clearstatcache();
+                    $new_size = filesize($path);
+
+                    // Calculate Savings
+                    $saved_bytes = $old_size - $new_size;
+                    $saved_percent = ($old_size > 0) ? round(($saved_bytes / $old_size) * 100, 1) : 0;
+
+                    // Human readable output logic
+                    $display_new = ($new_size > 1048576) ? round($new_size / 1048576, 2) . " MB" : round($new_size / 1024, 1) . " KB";
+
+                    // Update Database
+                    $new_info = @getimagesize($path);
+                    $new_dim = $new_info ? ($new_info[0] . "x" . $new_info[1]) : "ERROR";
+
+                    $stmt = $conn->prepare("UPDATE images SET status = 'compressed', dimension = ?, worker_id = NULL WHERE id = ?");
+                    $stmt->bind_param("si", $new_dim, $img['id']);
+                    $stmt->execute();
+                    $stmt->close();
+
+                    echo "{$display_new} (-{$saved_percent}% | Saved " . round($saved_bytes / 1024, 1) . " KB)\n";
+                } else {
+                    $conn->query("UPDATE images SET status = 'error', dimension = 'MISSING', worker_id = NULL WHERE id = {$img['id']}");
+                    echo "[IMG] File missing or empty for ID {$img['id']}\n";
+                }
+
+                // Keep the SATA disk happy
+                usleep(500000);
+            } else {
+                echo "[*] System Idle. Waiting for tasks...\n";
+                sleep(10);
+            }
         }
     }
+
     usleep(100000);
 }
