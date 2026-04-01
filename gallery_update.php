@@ -56,24 +56,34 @@ if ($chunk_index === $total_chunks - 1) {
     if (rename($temp_file, $target_path)) {
         $file_type = mime_content_type($target_path);
 
-        // --- WebP SUPPORT START ---
-        // If it's a WebP, convert it to JPG immediately because GD doesn't support it
-        if ($file_ext === 'webp' || $file_type === 'image/webp') {
+        // --- MODERN IMAGE SUPPORT (WebP & HEIC) ---
+        $modern_formats = ['webp', 'heic', 'heif'];
+        $is_modern = in_array($file_ext, $modern_formats) ||
+            $file_type === 'image/webp' ||
+            $file_type === 'image/heif' ||
+            $file_type === 'image/heic';
+
+        if ($is_modern) {
             $jpg_name = $unique_base . '.jpg';
             $jpg_path = $upload_dir . $jpg_name;
 
-            // ImageMagick convert (using -flatten to handle transparency/alpha channel)
-            $convert_cmd = "convert " . escapeshellarg($target_path) . " -flatten " . escapeshellarg($jpg_path);
+            /**
+             * ImageMagick 'convert' handles HEIC beautifully if libheif is installed.
+             * -quality 90: Initial high-quality conversion (worker.php will compress it later)
+             * -auto-orient: Critical for HEIC, as iPhones rely heavily on EXIF orientation
+             */
+            $convert_cmd = "convert " . escapeshellarg($target_path) . " -auto-orient " . escapeshellarg($jpg_path);
             shell_exec($convert_cmd);
 
-            if (file_exists($jpg_path)) {
-                unlink($target_path); // Delete the original .webp
+            if (file_exists($jpg_path) && filesize($jpg_path) > 0) {
+                unlink($target_path); // Delete the original .heic / .webp
                 $final_file_name = $jpg_name;
                 $target_path = $jpg_path;
                 $file_type = 'image/jpeg';
+                $file_ext = 'jpg';
             }
         }
-        // --- WebP SUPPORT END ---
+        // --- END MODERN IMAGE SUPPORT ---
 
         $media_type = (strpos($file_type, 'image') !== false) ? 'image' : 'video';
 
