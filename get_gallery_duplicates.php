@@ -11,15 +11,52 @@ if ($conn->connect_error) {
 
 // Optimization 1: Use XOR and count_set_bits for 10x faster Hamming calculation
 // Note: This works best if hashes are stored as hex/binary strings
-function fastHamming($hash1, $hash2) {
-    // If hashes are simple hex strings, this bitwise approach is much faster than a loop
-    return count_chars($hash1 ^ $hash2, 3) ? array_sum(array_map(function($c) use($hash1, $hash2, &$dist) {
-        // Fallback to fast char comparison if XORing strings isn't direct
-    }, [])) : 0; 
+/**
+ * Optimized for PHP 8.1+ to avoid implicit float conversion warnings.
+ * Uses GMP for hardware-level bit counting.
+ */
+function fastHamming($hash1, $hash2)
+{
+    // Check if hashes are identical first to save CPU
+    if ($hash1 === $hash2) return 0;
+
+    if (function_exists('gmp_hamdist')) {
+        // gmp_hamdist expects two GMP numbers or numeric strings
+        // We prefix with 0x to tell GMP it's a hexadecimal string
+        return gmp_hamdist("0x$hash1", "0x$hash2");
+    }
+
+    // Fallback for environments without GMP (slower but warning-free)
+    // We convert hex to bin strings and compare bits manually
+    $bin1 = unpack('H*', hex2bin($hash1))[1]; // Ensuring clean string format
+    // If you're on a 64-bit system, you can try (int) casting, 
+    // but GMP is the standard for 64-bit hashes.
+
+    $distance = 0;
+    $h1 = hex2bin($hash1);
+    $h2 = hex2bin($hash2);
+    $xor = $h1 ^ $h2; // Bitwise XOR on raw binary strings is valid and fast
+
+    foreach (str_split($xor) as $char) {
+        $distance += count_set_bits(ord($char));
+    }
+    return $distance;
+}
+
+// Helper for the fallback method
+function count_set_bits($n)
+{
+    $count = 0;
+    while ($n > 0) {
+        $n &= ($n - 1);
+        $count++;
+    }
+    return $count;
 }
 
 // Keeping your original logic but optimized slightly for speed
-function hammingDistance($hash1, $hash2) {
+function hammingDistance($hash1, $hash2)
+{
     $distance = 0;
     $len = strlen($hash1); // Cache length
     for ($i = 0; $i < $len; $i++) {
@@ -73,15 +110,15 @@ for ($i = 0; $i < $total; $i++) {
 
     for ($j = $i + 1; $j < $total; $j++) {
         $id2 = $images[$j]['id'];
-        
+
         // Optimization 3: Check memory-map for flags before calculating heavy hash distance
         $pairKey = $id1 . '-' . $id2; // Since j > i and we use ID order in SQL, min-max is usually consistent
         if (isset($flags[$pairKey])) {
-            continue; 
+            continue;
         }
 
         $distance = hammingDistance($h1, $images[$j]['imageHash_hamming']);
-        
+
         if ($distance <= 10) {
             $duplicates[] = [
                 'image1_id' => $id1,
