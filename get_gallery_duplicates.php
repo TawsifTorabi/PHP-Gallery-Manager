@@ -9,68 +9,49 @@ if ($conn->connect_error) {
     die(json_encode(["error" => "Connection failed: " . $conn->connect_error]));
 }
 
-// Optimization 1: Use XOR and count_set_bits for 10x faster Hamming calculation
-// Note: This works best if hashes are stored as hex/binary strings
 /**
- * Optimized for PHP 8.1+ to avoid implicit float conversion warnings.
- * Uses GMP for hardware-level bit counting.
+ * Fast Hamming Distance for Hex strings.
+ * Optimized to bail out early if distance exceeds threshold.
  */
-function fastHamming($hash1, $hash2)
+/**
+ * Fast Hamming Distance for Hex strings.
+ * Handles strings of different lengths and bails out early.
+ */
+function fastHamming($hash1, $hash2, $threshold = 10)
 {
-    // Check if hashes are identical first to save CPU
+    // 1. Identical check
     if ($hash1 === $hash2) return 0;
 
-    if (function_exists('gmp_hamdist')) {
-        // gmp_hamdist expects two GMP numbers or numeric strings
-        // We prefix with 0x to tell GMP it's a hexadecimal string
-        return gmp_hamdist("0x$hash1", "0x$hash2");
-    }
+    $len1 = strlen($hash1);
+    $len2 = strlen($hash2);
 
-    // Fallback for environments without GMP (slower but warning-free)
-    // We convert hex to bin strings and compare bits manually
-    $bin1 = unpack('H*', hex2bin($hash1))[1]; // Ensuring clean string format
-    // If you're on a 64-bit system, you can try (int) casting, 
-    // but GMP is the standard for 64-bit hashes.
+    // 2. Length difference is part of the distance
+    $distance = abs($len1 - $len2);
 
-    $distance = 0;
-    $h1 = hex2bin($hash1);
-    $h2 = hex2bin($hash2);
-    $xor = $h1 ^ $h2; // Bitwise XOR on raw binary strings is valid and fast
+    // If length difference alone exceeds threshold, exit early
+    if ($distance > $threshold) return $distance;
 
-    foreach (str_split($xor) as $char) {
-        $distance += count_set_bits(ord($char));
-    }
-    return $distance;
-}
+    // 3. Compare up to the shortest string length
+    $minLen = min($len1, $len2);
 
-// Helper for the fallback method
-function count_set_bits($n)
-{
-    $count = 0;
-    while ($n > 0) {
-        $n &= ($n - 1);
-        $count++;
-    }
-    return $count;
-}
-
-// Keeping your original logic but optimized slightly for speed
-function hammingDistance($hash1, $hash2)
-{
-    $distance = 0;
-    $len = strlen($hash1); // Cache length
-    for ($i = 0; $i < $len; $i++) {
+    for ($i = 0; $i < $minLen; $i++) {
         if ($hash1[$i] !== $hash2[$i]) {
             $distance++;
+
+            // Early Exit
+            if ($distance > $threshold) return $distance;
         }
     }
+
     return $distance;
 }
 
 $gallery_id = isset($_GET['gallery_id']) ? (int)$_GET['gallery_id'] : 1;
 
-// 1. Fetch images
-$query = "SELECT id, file_name, imageHash_hamming FROM images WHERE gallery_id = ? AND imageHash_hamming != ''";
+// 1. Fetch images - Sorting by hash brings similar images closer together
+$query = "SELECT id, file_name, imageHash_hamming FROM images 
+          WHERE gallery_id = ? AND imageHash_hamming != '' 
+          ORDER BY imageHash_hamming ASC";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $gallery_id);
 $stmt->execute();
@@ -87,8 +68,7 @@ if ($total === 0) {
     exit;
 }
 
-// Optimization 2: FETCH ALL FLAGS ONCE (Prevent N+1 Query)
-// This creates a "Map" in memory to check flags instantly without hitting MySQL again
+// 2. Fetch exclusion flags (already marked as "not duplicates")
 $flags = [];
 $flagQuery = "SELECT media_1, media_2 FROM image_duplicate_flag WHERE gallery_id = ? AND matched = 0";
 $fStmt = $conn->prepare($flagQuery);
@@ -96,35 +76,37 @@ $fStmt->bind_param("i", $gallery_id);
 $fStmt->execute();
 $fResult = $fStmt->get_result();
 while ($fRow = $fResult->fetch_assoc()) {
-    // Sort IDs so 5-10 and 10-5 both map to the same key
     $key = min($fRow['media_1'], $fRow['media_2']) . '-' . max($fRow['media_1'], $fRow['media_2']);
     $flags[$key] = true;
 }
 
 $duplicates = [];
+$threshold = 10;
 
-// 2. Compare images
+// 3. Comparison Loop
 for ($i = 0; $i < $total; $i++) {
-    $h1 = $images[$i]['imageHash_hamming'];
-    $id1 = $images[$i]['id'];
+    $img1 = $images[$i];
 
+    // Sliding Window Optimization: 
+    // Because we sorted by Hash, we only need to look at the next few dozen images 
+    // rather than the entire remainder of the array for a significant speed boost.
+    // To stay 100% accurate with Hamming, we still check all, but the early exit helps.
     for ($j = $i + 1; $j < $total; $j++) {
-        $id2 = $images[$j]['id'];
+        $img2 = $images[$j];
 
-        // Optimization 3: Check memory-map for flags before calculating heavy hash distance
-        $pairKey = $id1 . '-' . $id2; // Since j > i and we use ID order in SQL, min-max is usually consistent
-        if (isset($flags[$pairKey])) {
-            continue;
-        }
+        // Skip if flagged
+        $pairKey = $img1['id'] . '-' . $img2['id'];
+        if (isset($flags[$pairKey])) continue;
 
-        $distance = hammingDistance($h1, $images[$j]['imageHash_hamming']);
+        // Calculate distance with early exit threshold
+        $distance = fastHamming($img1['imageHash_hamming'], $img2['imageHash_hamming'], $threshold);
 
-        if ($distance <= 10) {
+        if ($distance <= $threshold) {
             $duplicates[] = [
-                'image1_id' => $id1,
-                'image1_file' => $images[$i]['file_name'],
-                'image2_id' => $id2,
-                'image2_file' => $images[$j]['file_name'],
+                'image1_id' => $img1['id'],
+                'image1_file' => $img1['file_name'],
+                'image2_id' => $img2['id'],
+                'image2_file' => $img2['file_name'],
                 'distance' => $distance
             ];
         }

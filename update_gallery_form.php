@@ -148,8 +148,11 @@ if (!$gallery) {
                         <img id="imageToCrop" style="max-width: 100%;">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <select id="aspectRatioPreset" class="form-select form-select-sm w-auto me-auto">
+                <<div class="modal-footer">
+                    <button type="button" id="autoDetectBtn" class="btn btn-outline-primary btn-sm me-auto">
+                        ✨ Auto-Detect
+                    </button>
+                    <select id="aspectRatioPreset" class="form-select form-select-sm w-auto me-2">
                         <option value="NaN">Free Crop</option>
                         <option value="1">Square (1:1)</option>
                         <option value="1.77777777778">16:9</option>
@@ -157,9 +160,9 @@ if (!$gallery) {
                     </select>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="cropButton" class="btn btn-success">Apply Crop</button>
-                </div>
             </div>
         </div>
+    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
@@ -448,6 +451,111 @@ if (!$gallery) {
         });
 
         videoToggle.onchange = renderPreviews;
+
+
+        document.getElementById('autoDetectBtn').addEventListener('click', () => {
+            const imageToCrop = document.getElementById('imageToCrop');
+            const bounds = detectContentBounds(imageToCrop);
+
+            if (bounds && cropper) {
+                // Reset aspect ratio to Free so it can fit the content exactly
+                document.getElementById('aspectRatioPreset').value = "NaN";
+                cropper.setAspectRatio(NaN);
+
+                // Set the crop box to the detected bounds
+                cropper.setData({
+                    x: bounds.left,
+                    y: bounds.top,
+                    width: bounds.width,
+                    height: bounds.height
+                });
+            } else {
+                alert("Could not detect distinct content from the white background.");
+            }
+        });
+
+        function detectContentBounds(imageElement) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Use natural dimensions for accuracy
+            canvas.width = imageElement.naturalWidth;
+            canvas.height = imageElement.naturalHeight;
+            ctx.drawImage(imageElement, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 1. Sample the 4 corners to find the background color
+            const corners = [
+                getPixel(data, 0, 0, w), // Top-Left
+                getPixel(data, w - 1, 0, w), // Top-Right
+                getPixel(data, 0, h - 1, w), // Bottom-Left
+                getPixel(data, w - 1, h - 1, w) // Bottom-Right
+            ];
+
+            // Average the corners to get a baseline Background Color
+            const bg = {
+                r: corners.reduce((a, b) => a + b.r, 0) / 4,
+                g: corners.reduce((a, b) => a + b.g, 0) / 4,
+                b: corners.reduce((a, b) => a + b.b, 0) / 4
+            };
+
+            let minX = w,
+                minY = h,
+                maxX = 0,
+                maxY = 0;
+            let found = false;
+
+            // 2. Tolerance: How different must a pixel be to be "content"?
+            // A lower number (like 15) makes it more sensitive to "almost white" pixels.
+            const tolerance = 15;
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const p = getPixel(data, x, y, w);
+                    const diff = Math.sqrt(
+                        Math.pow(p.r - bg.r, 2) +
+                        Math.pow(p.g - bg.g, 2) +
+                        Math.pow(p.b - bg.b, 2)
+                    );
+
+                    if (diff > tolerance) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        found = true;
+                    }
+                }
+            }
+
+            if (!found) return null;
+
+            // 2. SET PADDING TO ZERO (OR NEGATIVE)
+            // If you want it exactly on the edge, use 0. 
+            // If you want to "bite" into the image slightly to ensure NO white, use -2.
+            const padding = 0;
+
+            return {
+                left: Math.max(0, minX - padding),
+                top: Math.max(0, minY - padding),
+                width: Math.min(w, (maxX - minX) + (padding * 2)),
+                height: Math.min(h, (maxY - minY) + (padding * 2))
+            };
+        }
+
+        // Helper to extract RGB from the flat Uint8ClampedArray
+        function getPixel(data, x, y, width) {
+            const i = (y * width + x) * 4;
+            return {
+                r: data[i],
+                g: data[i + 1],
+                b: data[i + 2]
+            };
+        }
     </script>
 </body>
 
