@@ -17,33 +17,37 @@ if ($conn->connect_error) {
  * Fast Hamming Distance for Hex strings.
  * Handles strings of different lengths and bails out early.
  */
-function fastHamming($hash1, $hash2, $threshold = 10)
-{
-    // 1. Identical check
-    if ($hash1 === $hash2) return 0;
+function trueHamming($hex1, $hex2) {
+    if ($hex1 === $hex2) return 0;
+    
+    // Ensure they are the same length for comparison
+    $len1 = strlen($hex1);
+    $len2 = strlen($hex2);
+    if ($len1 !== $len2) return 999; // Or handle variable length
 
-    $len1 = strlen($hash1);
-    $len2 = strlen($hash2);
-
-    // 2. Length difference is part of the distance
-    $distance = abs($len1 - $len2);
-
-    // If length difference alone exceeds threshold, exit early
-    if ($distance > $threshold) return $distance;
-
-    // 3. Compare up to the shortest string length
-    $minLen = min($len1, $len2);
-
-    for ($i = 0; $i < $minLen; $i++) {
-        if ($hash1[$i] !== $hash2[$i]) {
-            $distance++;
-
-            // Early Exit
-            if ($distance > $threshold) return $distance;
-        }
+    $distance = 0;
+    // Process in chunks to save memory/time
+    for ($i = 0; $i < $len1; $i += 2) {
+        $chunk1 = hexdec(substr($hex1, $i, 2));
+        $chunk2 = hexdec(substr($hex2, $i, 2));
+        
+        // XOR shows which bits are different
+        $xor = $chunk1 ^ $chunk2;
+        
+        // Count set bits (the ones that are different)
+        $distance += countSetBits($xor);
     }
-
     return $distance;
+}
+
+// Helper to count bits (Population Count)
+function countSetBits($n) {
+    $count = 0;
+    while ($n > 0) {
+        $n &= ($n - 1);
+        $count++;
+    }
+    return $count;
 }
 
 $gallery_id = isset($_GET['gallery_id']) ? (int)$_GET['gallery_id'] : 1;
@@ -81,7 +85,7 @@ while ($fRow = $fResult->fetch_assoc()) {
 }
 
 $duplicates = [];
-$threshold = 70;
+$threshold = 20;
 
 // 3. Comparison Loop
 for ($i = 0; $i < $total; $i++) {
@@ -103,7 +107,7 @@ for ($i = 0; $i < $total; $i++) {
         if (isset($flags[$pairKey])) continue;
 
         // Calculate distance with early exit threshold
-        $distance = fastHamming($img1['imageHash_hamming'], $img2['imageHash_hamming'], $threshold);
+        $distance = trueHamming($img1['imageHash_hamming'], $img2['imageHash_hamming']);
 
         if ($distance <= $threshold) {
             $duplicates[] = [
