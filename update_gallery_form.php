@@ -454,23 +454,24 @@ if (!$gallery) {
 
 
         document.getElementById('autoDetectBtn').addEventListener('click', () => {
-            const imageToCrop = document.getElementById('imageToCrop');
-            const bounds = detectContentBounds(imageToCrop);
+            const img = document.getElementById('imageToCrop');
+
+            // Try Edge Detection first (Best for blurred/complex backgrounds)
+            let bounds = detectSubjectInBlur(img);
+
+            // Fallback to Color Detection (Best for solid white/black backdrops)
+            if (!bounds) {
+                bounds = detectContentBounds(img); // Your previous function
+            }
 
             if (bounds && cropper) {
-                // Reset aspect ratio to Free so it can fit the content exactly
-                document.getElementById('aspectRatioPreset').value = "NaN";
                 cropper.setAspectRatio(NaN);
-
-                // Set the crop box to the detected bounds
                 cropper.setData({
                     x: bounds.left,
                     y: bounds.top,
                     width: bounds.width,
                     height: bounds.height
                 });
-            } else {
-                alert("Could not detect distinct content from the white background.");
             }
         });
 
@@ -537,6 +538,74 @@ if (!$gallery) {
             // 2. SET PADDING TO ZERO (OR NEGATIVE)
             // If you want it exactly on the edge, use 0. 
             // If you want to "bite" into the image slightly to ensure NO white, use -2.
+            const padding = 0;
+
+            return {
+                left: Math.max(0, minX - padding),
+                top: Math.max(0, minY - padding),
+                width: Math.min(w, (maxX - minX) + (padding * 2)),
+                height: Math.min(h, (maxY - minY) + (padding * 2))
+            };
+        }
+
+        function detectSubjectInBlur(imageElement) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const w = imageElement.naturalWidth;
+            const h = imageElement.naturalHeight;
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(imageElement, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, w, h);
+            const data = imageData.data;
+            const grayscale = new Uint8Array(w * h);
+
+            // 1. Grayscale conversion
+            for (let i = 0; i < data.length; i += 4) {
+                grayscale[i / 4] = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            }
+
+            let minX = w,
+                minY = h,
+                maxX = 0,
+                maxY = 0;
+            let found = false;
+
+            // 2. Sobel Pass with High Sensitivity
+            // Increase threshold to ignore soft blur, decrease to catch fine details
+            const edgeThreshold = 50;
+
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    const idx = y * w + x;
+
+                    const gh =
+                        (-1 * grayscale[idx - w - 1]) + (1 * grayscale[idx - w + 1]) +
+                        (-2 * grayscale[idx - 1]) + (2 * grayscale[idx + 1]) +
+                        (-1 * grayscale[idx + w - 1]) + (1 * grayscale[idx + w + 1]);
+
+                    const gv =
+                        (-1 * grayscale[idx - w - 1]) + (-2 * grayscale[idx - w]) + (-1 * grayscale[idx - w + 1]) +
+                        (1 * grayscale[idx + w - 1]) + (2 * grayscale[idx + w]) + (1 * grayscale[idx + w + 1]);
+
+                    const magnitude = Math.sqrt(gh * gh + gv * gv);
+
+                    if (magnitude > edgeThreshold) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        found = true;
+                    }
+                }
+            }
+
+            if (!found) return null;
+
+            // 3. TIGHTNESS CONTROL
+            // Set padding to 0 for a pixel-perfect hug of the edges.
+            // Set to -5 if you want to slightly "shave" the edges to ensure NO background remains.
             const padding = 0;
 
             return {

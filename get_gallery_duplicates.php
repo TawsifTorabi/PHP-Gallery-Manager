@@ -81,7 +81,7 @@ while ($fRow = $fResult->fetch_assoc()) {
 }
 
 $duplicates = [];
-$threshold = 10;
+$threshold = 70;
 
 // 3. Comparison Loop
 for ($i = 0; $i < $total; $i++) {
@@ -91,11 +91,15 @@ for ($i = 0; $i < $total; $i++) {
     // Because we sorted by Hash, we only need to look at the next few dozen images 
     // rather than the entire remainder of the array for a significant speed boost.
     // To stay 100% accurate with Hamming, we still check all, but the early exit helps.
+    // Inside your comparison loop (Section 3)
     for ($j = $i + 1; $j < $total; $j++) {
         $img2 = $images[$j];
 
-        // Skip if flagged
-        $pairKey = $img1['id'] . '-' . $img2['id'];
+        // FIX: Use min and max to match how you stored the flags
+        $lowId = min($img1['id'], $img2['id']);
+        $highId = max($img1['id'], $img2['id']);
+        $pairKey = $lowId . '-' . $highId;
+
         if (isset($flags[$pairKey])) continue;
 
         // Calculate distance with early exit threshold
