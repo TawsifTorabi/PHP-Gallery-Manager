@@ -501,7 +501,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                         style="display: block; width: 100%; height: 100%;">
                                         <img class="lazy-load"
                                             style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                                            data-src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=400"
+                                            data-src="serve_image.php?file=<?php echo urlencode($media['file_name']); ?>&w=250&q=30"
                                             alt="Photo">
                                     </a>
                                 <?php else: ?>

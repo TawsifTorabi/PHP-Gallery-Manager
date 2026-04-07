@@ -85,7 +85,7 @@ while ($fRow = $fResult->fetch_assoc()) {
 }
 
 $duplicates = [];
-$threshold = 20;
+$threshold = 50;
 
 // 3. Comparison Loop
 for ($i = 0; $i < $total; $i++) {

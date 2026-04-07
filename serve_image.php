@@ -30,11 +30,22 @@ if (isset($_GET['w']) && filter_var($_GET['w'], FILTER_VALIDATE_INT)) {
     }
 }
 
-// 3. CACHING LOGIC
+// 3. NEW: Validate Quality (q)
+$quality = 80; // Default quality
+if (isset($_GET['q']) && filter_var($_GET['q'], FILTER_VALIDATE_INT)) {
+    $requested_q = intval($_GET['q']);
+    if ($requested_q >= 1 && $requested_q <= 100) {
+        $quality = $requested_q;
+    }
+}
+
+// 4. CACHING LOGIC
 $image_type = mime_content_type($file_path);
 $extension  = pathinfo($file_path, PATHINFO_EXTENSION);
-// Unique cache key based on filename and width
-$cache_file = $cache_dir . md5($file_name . $width) . '.' . $extension;
+
+// UPDATED: Unique cache key now includes quality parameter
+$cache_key  = md5($file_name . $width . $quality);
+$cache_file = $cache_dir . $cache_key . '.' . $extension;
 
 if (file_exists($cache_file) && filemtime($cache_file) > filemtime($file_path)) {
     header('Content-Type: ' . $image_type);
@@ -44,21 +55,19 @@ if (file_exists($cache_file) && filemtime($cache_file) > filemtime($file_path)) 
     exit;
 }
 
-// 4. RESIZING LOGIC
+// 5. RESIZING & COMPRESSION LOGIC
 header('Content-Type: ' . $image_type);
 header('Cache-Control: public, max-age=604800');
 header('X-Cache: MISS');
 
-// List of formats GD CANNOT handle in your current setup
 $modern_formats = ['image/webp', 'image/heic', 'image/heif'];
 
 if (in_array($image_type, $modern_formats)) {
     /**
-     * Use ImageMagick for WebP/HEIC
-     * -thumbnail: Faster than -resize (strips metadata)
-     * -auto-orient: Fixes iPhone HEIC rotation
+     * ImageMagick Compression
+     * -quality: 1-100 scale
      */
-    $cmd = "convert " . escapeshellarg($file_path) . " -auto-orient -thumbnail " . escapeshellarg($width) . " " . escapeshellarg($cache_file);
+    $cmd = "convert " . escapeshellarg($file_path) . " -auto-orient -thumbnail " . escapeshellarg($width) . " -quality " . escapeshellarg($quality) . " " . escapeshellarg($cache_file);
     shell_exec($cmd);
     
     if (file_exists($cache_file)) {
@@ -91,16 +100,30 @@ if (in_array($image_type, $modern_formats)) {
     if ($original_image) {
         imagecopyresampled($resized_image, $original_image, 0, 0, 0, 0, $width, $desired_height, $original_width, $original_height);
         
-        // Save to cache and output simultaneously
+        // Save to cache with Quality
         switch ($image_type) {
-            case 'image/jpeg': imagejpeg($resized_image, $cache_file, 85); break;
-            case 'image/png':  imagepng($resized_image, $cache_file, 8);  break;
-            case 'image/gif':  imagegif($resized_image, $cache_file);      break;
+            case 'image/jpeg': 
+                imagejpeg($resized_image, $cache_file, $quality); 
+                break;
+            case 'image/png':  
+                /**
+                 * PNG Quality in GD is 0 (no compression) to 9 (max compression).
+                 * We convert the 0-100 scale to 0-9.
+                 */
+                $png_quality = (int)round((100 - $quality) / 10);
+                imagepng($resized_image, $cache_file, $png_quality);  
+                break;
+            case 'image/gif':  
+                imagegif($resized_image, $cache_file); 
+                break;
         }
-        readfile($cache_file); // Final output from cache
+        readfile($cache_file);
         
         imagedestroy($resized_image);
         imagedestroy($original_image);
     }
+    // Temporary debug: Tell us the file size of the generated cache
+header('X-Debug-Filesize: ' . filesize($cache_file));
+header('X-Debug-Quality: ' . $quality);
 }
 ?>
