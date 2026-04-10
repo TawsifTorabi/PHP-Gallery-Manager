@@ -61,7 +61,6 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
 
 
     <style>
-        
         /* 1. GRID CONTAINER */
         #mediaContainer {
             display: flex;
@@ -468,6 +467,46 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                         }
                     </style>
 
+
+                    <script>
+                        // --- 4. DELETE MEDIA ITEM WITH CONFIRMATION & FEEDBACK ---
+                        function deleteMedia(mediaId) {
+                            // 1. Confirm action with the user
+                            if (!confirm('Are you sure you want to delete this media item?')) {
+                                return;
+                            }
+
+                            // 2. Make the request to the server
+                            fetch(`delete_image.php?image_id=${mediaId}`, {
+                                    method: 'GET' // Or 'POST' depending on your server setup
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.json(); // Parse the JSON feedback
+                                })
+                                .then(data => {
+                                    // 3. Handle the JSON feedback
+                                    if (data.status === 'success') {
+                                        // alert(data.message);
+
+                                        // Optional: Remove the element from the DOM so the page doesn't need a reload
+                                        const element = document.getElementById('mediaContent' + mediaId);
+                                        if (element) {
+                                            element.remove();
+                                        }
+                                    } else {
+                                        alert('Error: ' + data.message);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('There was a problem with the fetch operation:', error);
+                                    alert('An error occurred while trying to delete the item.');
+                                });
+                        }
+                    </script>
+
                     <div id="mediaContainer" class="media-grid">
                         <?php
                         $stmt_media->execute();
@@ -493,6 +532,20 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 id="mediaContent<?php echo $media['id']; ?>"
                                 data-type="<?php echo $media['file_type']; ?>"
                                 style="aspect-ratio: <?php echo $ratio; ?>; position: relative;">
+
+                                <div>
+                                    <!-- //inside this div, create a little hamburger Icon, clicking this icon will show a dropdown with options to delete or edit the media item. This is to prevent accidental clicks on the media item itself, which would open the lightbox. The dropdown should have two options: "Delete" and "Edit". The "Delete" option will send a request to delete the media item, while the "Edit" option will open a modal allowing the user to change the title and description of the media item. Also, clicking anything will prevent Propagation to the lightbox, so users can safely click the dropdown without triggering the lightbox. Make sure the dropdown is styled nicely and is easy to use on both desktop and mobile devices. -->
+                                    <div class="dropdown" style="position: absolute; bottom: 10px; right: 10px; z-index: 20;">
+                                        <i class="bi bi-three-dots-vertical text-white" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem; cursor: pointer;"></i>
+                                        <ul class="dropdown-menu">
+                                            <?php if ($media['file_type'] === 'video'): ?>
+                                                <li><a class="dropdown-item" href="generate_images.php?gallery_id=<?php echo $gallery['id']; ?>&video_file=<?php echo $media['file_name']; ?>"><i class="bi bi-play-fill"></i> Generate Images</a></li>
+                                            <?php endif; ?>
+                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="bi bi-trash"></i> Delete</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="bi bi-pencil"></i> Edit</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
 
                                 <input type="checkbox" class="customCheckbox select-checkbox" data-id="<?php echo $media['id']; ?>" />
 
