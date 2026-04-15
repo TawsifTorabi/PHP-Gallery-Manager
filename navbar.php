@@ -248,6 +248,47 @@ $current_page = basename($_SERVER['PHP_SELF']);
     outline: none;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
   }
+
+
+
+  .fab-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+
+  .fab-main {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    font-size: 24px;
+  }
+
+  .fab-options {
+    display: none;
+    flex-direction: column;
+    margin-bottom: 15px;
+    gap: 10px;
+  }
+
+  .fab-container:hover .fab-options {
+    display: flex;
+  }
+
+  .fab-item {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 </style>
 <div id="lock-overlay">
   <div class="pin-container">
@@ -255,11 +296,21 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <input type="password" name="fake_password" style="display:none;" aria-hidden="true">
 
     <h3>Session Locked</h3>
-    <input type="password" id="pin-input" autocomplete="off">
+    <input type="password" inputmode="numeric" pattern="[0-9]*" id="pin-input" autocomplete="off">
     <button id="unlock-btn" class="btn btn-danger">Unlock</button>
     <span id="error-msg" style="color: red; display: none;">Invalid PIN</span>
   </div>
 </div>
+
+<div class="fab-container">
+  <div class="fab-options">
+    <button class="fab-item btn btn-primary" id="go-top-btn" title="Go to Top">↑</button>
+    <button class="fab-item btn btn-warning" id="fab-lock-btn" title="Lock Screen">🔒</button>
+  </div>
+  <button class="fab-main btn btn-danger">＋</button>
+</div>
+
+
 <script type="module">
   const SessionManager = {
     timeout: 30000,
@@ -289,19 +340,46 @@ $current_page = basename($_SERVER['PHP_SELF']);
     },
 
     setupEventListeners() {
+      // Existing activity listeners...
       ['mousemove', 'keydown', 'mousedown', 'scroll'].forEach(event => {
         document.addEventListener(event, () => {
-          // Only reset if we aren't currently locked
           if (localStorage.getItem('is_session_locked') !== 'true') {
             this.resetTimer();
           }
         });
       });
 
-      document.getElementById('unlock-btn').addEventListener('click', () => this.validatePin());
-      document.getElementById('pin-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') this.validatePin();
+      // 1. Keyboard Shortcut: CTRL + L
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+          e.preventDefault(); // Prevent browser "address bar" focus
+          this.lock(true);
+        }
       });
+
+      // 2. Floating Lock Button
+      document.getElementById('fab-lock-btn').addEventListener('click', () => {
+        this.lock(true);
+      });
+
+      // 3. Floating Go To Top Button
+      document.getElementById('go-top-btn').addEventListener('click', () => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+
+      // 4. Existing PIN auto-check logic
+      const pinInput = document.getElementById('pin-input');
+      pinInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        if (e.target.value.length === 4) {
+          this.validatePin();
+        }
+      });
+
+      document.getElementById('unlock-btn').addEventListener('click', () => this.validatePin());
     },
 
     resetTimer() {
@@ -322,6 +400,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
       const pinInput = document.getElementById('pin-input');
       const error = document.getElementById('error-msg');
 
+      // Prevent multiple simultaneous fetches if they type fast
+      if (this.isValidating) return;
+      this.isValidating = true;
+
       const formData = new FormData();
       formData.append('pin', pinInput.value);
 
@@ -336,12 +418,13 @@ $current_page = basename($_SERVER['PHP_SELF']);
           this.unlock();
         } else {
           error.style.display = 'block';
-          pinInput.value = '';
-          pinInput.classList.add('is-invalid');
+          pinInput.value = ''; // Clears the 4 digits so they can restart
+          pinInput.focus();
         }
       } catch (e) {
-        alert("Server error during validation." + e.message);
-        console.log("Server error during validation." + e.message);
+        console.error("Server error", e);
+      } finally {
+        this.isValidating = false;
       }
     },
 

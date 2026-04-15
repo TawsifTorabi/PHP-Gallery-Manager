@@ -120,10 +120,19 @@ if (!$gallery) {
                 <label class="fw-bold mb-2">Media Management</label>
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" id="videoPreviewToggle" checked>
-                    <label class="form-check-label" for="videoPreviewToggle">Enable Video Previews (Disable for 100MB+ files to prevent crashes)</label>
+                    <label class="form-check-label" for="videoPreviewToggle">Enable Video Previews</label>
                 </div>
-                <input type="file" class="form-control" id="mediaInput" name="media[]" multiple accept="image/*,video/*">
-                <small class="text-muted">You can also paste images directly from your clipboard.</small>
+
+                <div id="dropZone" class="border border-2 border-dashed rounded p-4 text-center mb-3" style="background: #f8f9fa; cursor: pointer;">
+                    <p class="mb-0 text-muted">Drag images here from other websites or your computer</p>
+                </div>
+
+                <div class="input-group">
+                    <input type="file" class="form-control" id="mediaInput" name="media[]" multiple accept="image/*,video/*">
+                    <button class="btn btn-outline-secondary" type="button" id="pasteBtn">📋 Paste from Clipboard</button>
+                </div>
+
+                <small class="text-muted">You can also use <strong>Ctrl + V</strong> anywhere on this page.</small>
 
                 <div class="d-flex justify-content-between mt-2">
                     <small id="uploadSpeed" class="text-muted">Speed: 0 KB/s</small>
@@ -624,6 +633,92 @@ if (!$gallery) {
                 g: data[i + 1],
                 b: data[i + 2]
             };
+        }
+
+
+
+        // --- NEW: Paste Button Handler ---
+        document.getElementById('pasteBtn').addEventListener('click', async () => {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    for (const type of item.types) {
+                        if (type.startsWith('image/')) {
+                            const blob = await item.getType(type);
+                            const file = new File([blob], `pasted_${Date.now()}.png`, {
+                                type
+                            });
+                            selectedFiles.push(file);
+                            syncInput();
+                        }
+                    }
+                }
+            } catch (err) {
+                alert("Please allow clipboard permissions or use Ctrl+V.");
+            }
+        });
+
+        // --- NEW: Drag & Drop from Other Sites ---
+        const dropZone = document.getElementById('dropZone');
+
+        // Visual feedback when dragging over
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-primary', 'bg-light');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary', 'bg-light');
+            });
+        });
+
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+
+            // 1. Check for files (from computer)
+            if (e.dataTransfer.files.length > 0) {
+                selectedFiles = [...selectedFiles, ...Array.from(e.dataTransfer.files)];
+                syncInput();
+            }
+            // 2. Check for URLs (from other websites)
+            else {
+                const html = e.dataTransfer.getData('text/html');
+                const url = e.dataTransfer.getData('text/uri-list');
+
+                let imgSrc = url;
+                if (html) {
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const img = doc.querySelector('img');
+                    if (img) imgSrc = img.src;
+                }
+
+                if (imgSrc) {
+                    handleExternalImage(imgSrc);
+                }
+            }
+        });
+
+        // Helper to convert an external URL into a File object
+        async function handleExternalImage(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const ext = blob.type.split('/')[1] || 'png';
+                const file = new File([blob], `external_image_${Date.now()}.${ext}`, {
+                    type: blob.type
+                });
+
+                selectedFiles.push(file);
+                syncInput();
+            } catch (err) {
+                console.error("CORS block: Cannot grab image bytes directly. Passing URL to server instead.");
+                // Optional: You could create a dummy "placeholder" file or alert the user
+                alert("Security restriction: Cannot drag this specific image directly. Try saving it first.");
+            }
         }
     </script>
 </body>
