@@ -104,9 +104,14 @@ $usedDiskSpace = formatSize($diskUsedSpace);
 $usagePercentage = ($size / $diskFreeSpace) * 100;
 
 
-?>
+require 'class/assets.php';
+Assets::use('bootstrap', 'css');
+Assets::use('bootstrap', 'js');
+Assets::use('jquery', 'js');
+
 
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -116,8 +121,8 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <?php Assets::renderCSS(); ?>
+
     <style>
         :root {
             --primary-blue: #4285f4;
@@ -235,6 +240,8 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
 <body>
     <!-- Fixed Top Navbar -->
     <?php include 'navbar.php'; ?>
+
+    <?php Assets::renderJS(); ?>
 
     <div class="container mt-5">
         <h2 class="mb-4">Welcome, <?php echo $_SESSION['username']; ?>!</h2>
@@ -430,8 +437,8 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
     </div>
 
     <!-- Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script> -->
 
     <script>
         // Dynamic search functionality
@@ -450,6 +457,37 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
                 });
             });
         });
+
+
+        //Vanilla JS version of AJAX search (Uncomment if you want to use it instead of jQuery)
+        // document.addEventListener('DOMContentLoaded', function() {
+        //     const searchInput = document.getElementById('searchInput');
+        //     const galleryTableBody = document.querySelector('#galleryTable tbody');
+
+        //     if (searchInput) {
+        //         searchInput.addEventListener('input', function() {
+        //             const query = this.value;
+
+        //             // Using fetch instead of $.ajax
+        //             fetch(`search_gallery_ajax.php?query=${encodeURIComponent(query)}`, {
+        //                     method: 'GET',
+        //                     headers: {
+        //                         'X-Requested-With': 'XMLHttpRequest'
+        //                     }
+        //                 })
+        //                 .then(response => {
+        //                     if (!response.ok) throw new Error('Network response was not ok');
+        //                     return response.text(); // Use .text() because your PHP returns HTML rows
+        //                 })
+        //                 .then(html => {
+        //                     galleryTableBody.innerHTML = html;
+        //                 })
+        //                 .catch(error => {
+        //                     console.error('Error fetching search results:', error);
+        //                 });
+        //         });
+        //     }
+        // });
     </script>
 
 </body>

@@ -1,6 +1,8 @@
 <?php
 include 'session.php';
 require 'db.php';
+
+
 date_default_timezone_set('Asia/Dhaka');
 
 // Ensure the user is logged in
@@ -41,6 +43,10 @@ while ($media = $media_result->fetch_assoc()) {
 
 // Format the last updated time
 $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last_updated)) : 'No updates yet';
+
+require 'class/assets.php';
+Assets::use(['bootstrap', 'fontawesome', 'jquery', 'popper', 'glightbox']);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -53,11 +59,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Galleries</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous">
+     <?php Assets::renderCSS(); ?>
+    
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous"> -->
 
 
     <style>
@@ -221,8 +225,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         }
     </style>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/css/glightbox.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/js/glightbox.min.js"></script>
+    <?php Assets::renderJS(); ?>
+    <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/css/glightbox.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/glightbox/3.3.0/js/glightbox.min.js"></script> -->
 </head>
 
 <body>
@@ -242,11 +247,11 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
             <div class="card mb-4">
                 <div class="card-body">
                     <div class="dropdown ms-auto" style="float: right;">
-                        <i class="bi bi-three-dots-vertical" data-bs-toggle="dropdown" aria-expanded="false"></i>
+                        <i class="fa fa-ellipsis-v" data-bs-toggle="dropdown" aria-expanded="false"></i>
                         <ul class="dropdown-menu">
                             <li>
                                 <span class="dropdown-item">
-                                    <a class="btn btn-danger ml-2" href="delete_gallery.php?gallery_id=<?php echo $gallery['id']; ?>"><i class="bi bi-trash"></i> Delete</a>
+                                    <a class="btn btn-danger ml-2" href="delete_gallery.php?gallery_id=<?php echo $gallery['id']; ?>"><i class="fa fa-trash"></i> Delete</a>
                                 </span>
                             </li>
                         </ul>
@@ -438,7 +443,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
 
                     <div class="row">
                         <div class="col-4">
-                            <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()"><i class="bi bi-trash"></i></button>
+                            <button id="deleteSelectedBtn" class="btn btn-danger mb-3" style="display: none;" onclick="deleteSelected()"><i class="fa fa-trash"></i></button>
                             <div class="form-check" id="selectAllContainer" style="border-bottom: 1px solid blue; display: none;">
                                 <input class="form-check-input" type="checkbox" id="selectAll" onclick="selectAllImages()">
                                 <label class="form-check-label" for="selectAll">Select All</label>
@@ -453,9 +458,9 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                             </select>
                         </div>
                         <div class="col-4">
-                            <a class="btn btn-primary ml-2" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-plus-circle-fill"></i></a>
-                            <a class="btn btn-primary ml-2" href="hero_images.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-border-all"></i></a>
-                            <a class="btn btn-primary ml-2" href="image_from_video.php?id=<?php echo $gallery['id']; ?>"><i class="bi bi-image"></i></a>
+                            <a class="btn btn-primary ml-2" href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"><i class="fas fa-plus-circle"></i></a>
+                            <a class="btn btn-primary ml-2" href="hero_images.php?id=<?php echo $gallery['id']; ?>"><i class="fas fa-border-all"></i></a>
+                            <a class="btn btn-primary ml-2" href="image_from_video.php?id=<?php echo $gallery['id']; ?>"><i class="fas fa-image"></i></a>
                         </div>
                     </div>
 
@@ -536,13 +541,13 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 <div>
                                     <!-- //inside this div, create a little hamburger Icon, clicking this icon will show a dropdown with options to delete or edit the media item. This is to prevent accidental clicks on the media item itself, which would open the lightbox. The dropdown should have two options: "Delete" and "Edit". The "Delete" option will send a request to delete the media item, while the "Edit" option will open a modal allowing the user to change the title and description of the media item. Also, clicking anything will prevent Propagation to the lightbox, so users can safely click the dropdown without triggering the lightbox. Make sure the dropdown is styled nicely and is easy to use on both desktop and mobile devices. -->
                                     <div class="dropdown" style="position: absolute; bottom: 10px; right: 10px; z-index: 20;">
-                                        <i class="bi bi-three-dots-vertical text-white" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem; cursor: pointer;"></i>
+                                        <i class="fa fa-ellipsis-v text-white" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 1.5rem; cursor: pointer;"></i>
                                         <ul class="dropdown-menu">
                                             <?php if ($media['file_type'] === 'video'): ?>
-                                                <li><a class="dropdown-item" href="generate_images.php?gallery_id=<?php echo $gallery['id']; ?>&video_file=<?php echo $media['file_name']; ?>"><i class="bi bi-play-fill"></i> Generate Images</a></li>
+                                                <li><a class="dropdown-item" href="generate_images.php?gallery_id=<?php echo $gallery['id']; ?>&video_file=<?php echo $media['file_name']; ?>"><i class="fa fa-image"></i> Generate Images</a></li>
                                             <?php endif; ?>
-                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="bi bi-trash"></i> Delete</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="bi bi-pencil"></i> Edit</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="fa fa-trash"></i> Delete</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="fa fa-pencil"></i> Edit</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -575,7 +580,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                             </div>
                                         <?php else: ?>
                                             <div class="play-button"><i class="fa-solid fa-circle-play"></i></div>
-                                            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
+                                            <span class="video-indicator"><i class="fa fa-video"></i> Video</span>
                                         <?php endif; ?>
 
                                         <img class="lazy-load"
@@ -649,8 +654,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
         </div>
 
         <!-- Bootstrap JS and Popper.js -->
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script> -->
 
         <script>
             // --- 1. LAZY LOADING LOGIC ---
@@ -894,7 +899,7 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                                 if (!container.querySelector('.play-button')) {
                                     const playBtnHtml = `
                             <div class="play-button" style="pointer-events: none;"><i class="fa-solid fa-circle-play"></i></div>
-                            <span class="video-indicator"><i class="bi bi-camera-video-fill"></i> Video</span>
+                            <span class="video-indicator"><i class="fa fa-camera"></i> Video</span>
                         `;
                                     link.insertAdjacentHTML('afterbegin', playBtnHtml);
                                 }
@@ -944,8 +949,8 @@ $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last
                     backdrop: true,
                     preload: 5,
                     plyr: {
-                        css: 'https://cdn.plyr.io/3.5.6/plyr.css',
-                        js: 'https://cdn.plyr.io/3.5.6/plyr.js',
+                        css: 'vendor/plyr-3.8.4/package/dist/plyr.css',
+                        js: 'vendor/plyr-3.8.4/package/dist/plyr.min.js',
                         config: {
                             ratio: '9:16',
                             muted: false,

@@ -296,7 +296,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <input type="password" name="fake_password" style="display:none;" aria-hidden="true">
 
     <h3>Session Locked</h3>
-    <input type="password" inputmode="numeric" pattern="[0-9]*" id="pin-input" autocomplete="off">
+    <input type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*" id="pin-input" autocomplete="off">
     <button id="unlock-btn" class="btn btn-danger">Unlock</button>
     <span id="error-msg" style="color: red; display: none;">Invalid PIN</span>
   </div>

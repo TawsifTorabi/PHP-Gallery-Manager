@@ -2,6 +2,13 @@
 session_start();
 require 'db.php';
 
+require 'class/assets.php';
+Assets::use('bootstrap', 'css');
+Assets::use('cropper', 'css');
+Assets::use('bootstrap', 'js');
+Assets::use('cropper', 'js');
+Assets::use('ckeditor', 'js');
+
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit;
@@ -27,9 +34,7 @@ if (!$gallery) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Update Gallery</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
-    <script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+    <?php Assets::renderCSS(); ?>
     <style>
         .media-preview-container {
             display: flex;
@@ -174,8 +179,7 @@ if (!$gallery) {
     </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <?php Assets::renderJS(); ?>
 
     <script>
         const mediaInput = document.getElementById('mediaInput');
