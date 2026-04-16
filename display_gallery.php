@@ -59,8 +59,8 @@ Assets::use(['bootstrap', 'fontawesome', 'jquery', 'popper', 'glightbox']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Galleries</title>
     <!-- Bootstrap CSS -->
-     <?php Assets::renderCSS(); ?>
-    
+    <?php Assets::renderCSS(); ?>
+
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" integrity="sha384-tViUnnbYAV00FLIhhi3v/dWt3Jxw4gZQcNoSCxCIFNJVCx7/D55/wXsrNIRANwdD" crossorigin="anonymous"> -->
 
 
@@ -274,100 +274,107 @@ Assets::use(['bootstrap', 'fontawesome', 'jquery', 'popper', 'glightbox']);
                     </div>
 
                     <script>
-                        // script.js
+                        const galleryId = '<?php echo $gallery['id']; ?>';
 
-                        const galleryId = '<?php echo $gallery['id']; ?>'; // Replace with actual gallery ID
-
-                        // Function to load duplicate images from the server
                         window.loadDuplicates = function(galleryId) {
+                            // Show a non-blocking placeholder
+                            $('#duplicate-images-container').html('<div class="spinner-border text-primary" role="status"></div><p>Processing data in background...</p>');
+
                             $.getJSON(`get_gallery_duplicates.php?gallery_id=${galleryId}`, function(response) {
                                 if (response.duplicates && response.duplicates.length > 0) {
-                                    displayDuplicates(response.duplicates);
+                                    $('#duplicate-images-container').empty();
+
+                                    // Start the smooth background renderer
+                                    renderSmoothly(response.duplicates);
                                 } else {
                                     $('#duplicate-images-container').html('<p>No duplicates found.</p>');
                                 }
-                            }).fail(function() {
-                                alert('Error loading duplicate images.');
+                            });
+                        }
+
+                        /**
+                         * Renders items only when the browser is "idle"
+                         */
+                        function renderSmoothly(items) {
+                            let index = 0;
+                            const container = $('#duplicate-images-container');
+
+                            function workLoop(deadline) {
+                                // While there is data AND the browser has free time (more than 1ms left)
+                                while (index < items.length && deadline.timeRemaining() > 1) {
+                                    const pair = items[index];
+                                    const cardHtml = generateCardHtml(pair, index);
+                                    container.append(cardHtml);
+                                    index++;
+                                }
+
+                                // If we didn't finish, ask the browser for the next available idle slice
+                                if (index < items.length) {
+                                    requestIdleCallback(workLoop);
+
+                                    // Re-init lightbox only occasionally to save CPU
+                                    if (index % 50 === 0 && typeof GlightboxDefine === "function") GlightboxDefine();
+                                } else {
+                                    if (typeof GlightboxDefine === "function") GlightboxDefine();
+                                }
+                            }
+
+                            // Start the loop
+                            if ('requestIdleCallback' in window) {
+                                requestIdleCallback(workLoop);
+                            } else {
+                                // Fallback for older browsers
+                                displayDuplicatesInChunks(items, 0, 10);
+                            }
+                        }
+
+                        function generateCardHtml(pair, index) {
+                            return `
+        <div class="card duplicate-card mr-5" id="pair-container-${index}" style="display:none;">
+            <div class="card-body">
+                <h5 class="card-title">Pair #${index + 1}</h5>
+                <div class="row">
+                    <div class="col-6">
+                        <div class="image-container">                   
+                            <a href="serve_image.php?file=${pair.image1_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox">
+                                <img loading="lazy" src="serve_image.php?file=${pair.image1_file}&w=300" class="img-fluid uniform-image" alt="Img 1">
+                            </a>
+                        </div>
+                        <button class="btn btn-sm btn-success mt-2" onclick="keepImage(${pair.image1_id}, ${pair.image2_id}, ${index})">Keep</button>
+                    </div>
+                    <div class="col-6">
+                        <div class="image-container">
+                            <a href="serve_image.php?file=${pair.image2_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox">
+                                <img loading="lazy" src="serve_image.php?file=${pair.image2_file}&w=300" class="img-fluid uniform-image" alt="Img 2">
+                            </a>
+                        </div>
+                        <button class="btn btn-sm btn-danger mt-2" onclick="keepImage(${pair.image2_id}, ${pair.image1_id}, ${index})">Keep</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+                            // Note: I added display:none above so we can fade them in smoothly below
+                        }
+
+                        // Fade items in so the page doesn't jump
+                        $(document).on('DOMNodeInserted', '.duplicate-card', function() {
+                            $(this).fadeIn(400);
+                        });
+
+                        // Action functions
+                        window.keepImage = function(keepId, deleteId, index) {
+                            $.get(`delete_image.php?image_id=${deleteId}`, function(response) {
+                                if (response.status === 'success') {
+                                    $(`#pair-container-${index}`).slideUp(200, function() {
+                                        $(this).remove();
+                                    });
+                                }
                             });
                         }
 
                         $(document).ready(function() {
                             loadDuplicates(galleryId);
                         });
-
-                        // Function to display duplicate images in cards
-                        window.displayDuplicates = function(duplicates) {
-                            let html = '';
-                            duplicates.forEach((pair, index) => {
-                                html += `
-                    <div class="card duplicate-card mr-5">
-                        <div class="card-body">
-                            <h5 class="card-title">Duplicate Pair #${index + 1}</h5>
-                            <div class="row">
-                                <div class="col-6">
-                                    <div class="image-container">                   
-                                        <a href="serve_image.php?file=${pair.image1_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
-                                            <img loading="lazy" src="serve_image.php?file=${pair.image1_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
-                                            <div class="overlay">
-                                                <div class="text">#${pair.image1_id}</div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <button class="btn btn-success mt-2" onclick="keepImage(${pair.image1_id}, ${pair.image2_id})">Keep This</button>
-                                </div>
-                                <div class="col-6">
-                                    <div class="image-container">
-                                        <a href="serve_image.php?file=${pair.image2_file}&w=800" class="my-lightbox-toggle" data-gallery="pair${index + 1}" data-toggle="lightbox" rel="noopener noreferrer">
-                                            <img loading="lazy" src="serve_image.php?file=${pair.image2_file}&w=300" class="img-fluid uniform-image gallery-img"  alt="Image 1">
-                                            <div class="overlay">
-                                                <div class="text">#${pair.image2_id}</div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <button class="btn btn-danger mt-2" onclick="keepImage(${pair.image2_id}, ${pair.image1_id})">Keep This</button>
-                                </div>
-                                <button class="btn btn-secondary mt-3" onclick="flagAsNonDuplicate(${pair.image1_id}, ${pair.image2_id}, ${galleryId}, ${index}, this.closest('.card'))">Keep Both</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                            });
-
-                            $('#duplicate-images-container').html(html);
-                            GlightboxDefine();
-                        }
-
-                        // Flag as non-duplicate
-                        window.flagAsNonDuplicate = function(media1, media2, galleryId, cardIndex, element) {
-                            $.post('flag_duplicate.php', {
-                                media_1: media1,
-                                media_2: media2,
-                                gallery_id: galleryId,
-                                matched: 0
-                            }, function(response) {
-                                if (response.status === 'success') {
-                                    $(`#duplicate-card-${cardIndex}`).remove();
-                                    element.remove();
-                                } else {
-                                    alert('Error flagging the images.');
-                                }
-                            });
-                        }
-
-                        // Function to handle keeping one image and deleting the other
-                        window.keepImage = function(keepImageId, deleteImageId) {
-                            $.get(`delete_image.php?image_id=${deleteImageId}`, function(response) {
-                                if (response.status === 'success') {
-                                    // Remove the card for this duplicate pair
-                                    $(`#duplicate-card-${keepImageId}`).remove();
-                                    // Optionally, reload the next duplicates after deletion
-                                    loadDuplicates(galleryId);
-                                    document.getElementById('mediaContent' + deleteImageId).remove();
-                                } else {
-                                    alert('Error deleting the image.');
-                                }
-                            });
-                        }
                     </script>
 
                     <!-- Add the following CSS for the uniform image size and horizontal scroll effect -->
