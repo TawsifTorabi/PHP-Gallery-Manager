@@ -45,7 +45,9 @@ while ($media = $media_result->fetch_assoc()) {
 $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last_updated)) : 'No updates yet';
 
 require 'class/assets.php';
-Assets::use(['bootstrap', 'fontawesome', 'jquery', 'popper', 'glightbox']);
+Assets::use(['fontawesome', 'jquery', 'popper', 'glightbox']);
+Assets::use('bootstrap', 'css');
+Assets::use('bootstrap_bundle', 'js');
 
 ?>
 <!DOCTYPE html>

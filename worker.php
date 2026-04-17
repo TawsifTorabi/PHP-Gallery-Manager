@@ -11,7 +11,18 @@ require 'db.php';
 ob_implicit_flush(true);
 while (ob_get_level()) ob_end_clean();
 
-echo "[*] Launching Heavy-Duty Worker (Docker/SATA Optimized)\n";
+echo "[*] Launching PHP-Gallery-Manager Backend Worker (Docker/SATA Optimized)\n";
+echo "
+
+    Written by: Tawsif Torabi with the help of ChatGPT-4 \n
+    Github: https://github.com/tawsiftorabi/php-gallery-manager\n
+    
+";
+echo "[*] Watching for video processing tasks and image compression...\n";
+echo "[*] This worker is optimized to prevent i3 hangs on SATA disks by ensuring only one ffmpeg process runs at a time and by constantly draining the ffmpeg progress pipes.\n";
+echo "[*] It also processes image compression tasks when no videos are being processed, ensuring efficient use of resources while maintaining stability in Docker environments.\n";
+echo "[*] If you see this message, the worker is running and ready to process tasks.\n";
+echo "[*] Waiting for tasks...\n";
 
 $upload_dir = "/var/www/html/uploads/";
 
@@ -187,10 +198,10 @@ while (true) {
                     'output' => $output,
                     'outputName' => $outputName
                 ];
-                echo "[*] STARTED ID {$video['id']} FROM Gallery {$video['gallery_id']} (" . round(filesize($input) / 1048576, 2) . " MB)\n";
+                echo "[*] STARTED ID {$video['id']} FROM Gallery {$video['gallery_id']} (" . round(filesize($input) / 1048576, 2) . " MB) -- FileName: {$video['file_name']} \n";
             }
         } else {
-           
+
             // CHANGE: Added 'ready' to ensure we don't grab half-uploaded or already-processing files
             // 2. If no videos, find an IMAGE to compress
             $conn->query("UPDATE images SET status = 'processing', worker_id = '$temp_uuid' 
@@ -202,27 +213,47 @@ while (true) {
                 $path = $upload_dir . $img['file_name'];
 
                 if (file_exists($path) && filesize($path) > 0) {
-                    // Capture original size
+
                     $old_size = filesize($path);
 
-                    echo "[IMG] ID {$img['id']}: " . round($old_size / 1024, 1) . " KB -> ";
+                    echo "[IMG] ID {$img['id']}: " . round($old_size / 1024, 1) . " KB -> " . " -- FileName: {$img['file_name']}... ";
 
-                    // Compression Command
-                    $cmd = "mogrify -strip -auto-orient -resize '1500x1500>' -quality 90 -sampling-factor 4:2:0 " . escapeshellarg($path);
+                    // Temp output file
+                    $temp_path = $path . ".tmp.jpg";
+
+                    // Convert into temp file instead of overwriting
+                    $cmd = "magick " . escapeshellarg($path) .
+                        " -strip -auto-orient -resize 1500x1500\\> -quality 85 -sampling-factor 4:2:0 " .
+                        escapeshellarg($temp_path);
+
                     shell_exec($cmd);
 
-                    // Clear cache to get the NEW size
                     clearstatcache();
-                    $new_size = filesize($path);
 
-                    // Calculate Savings
-                    $saved_bytes = $old_size - $new_size;
-                    $saved_percent = ($old_size > 0) ? round(($saved_bytes / $old_size) * 100, 1) : 0;
+                    if (file_exists($temp_path) && filesize($temp_path) > 0) {
 
-                    // Human readable output logic
-                    $display_new = ($new_size > 1048576) ? round($new_size / 1048576, 2) . " MB" : round($new_size / 1024, 1) . " KB";
+                        $new_size = filesize($temp_path);
 
-                    // Update Database
+                        if ($new_size < $old_size) {
+                            // ✅ Replace original
+                            unlink($path);
+                            rename($temp_path, $path);
+
+                            $saved_bytes = $old_size - $new_size;
+                            $saved_percent = round(($saved_bytes / $old_size) * 100, 1);
+
+                            echo round($new_size / 1024, 1) . " KB (-{$saved_percent}%)\n";
+                        } else {
+                            // ❌ Keep original
+                            unlink($temp_path);
+
+                            echo "SKIPPED (larger after compression)\n";
+                        }
+                    } else {
+                        echo "FAILED (conversion error)\n";
+                    }
+
+                    // Update DB
                     $new_info = @getimagesize($path);
                     $new_dim = $new_info ? ($new_info[0] . "x" . $new_info[1]) : "ERROR";
 
@@ -230,8 +261,6 @@ while (true) {
                     $stmt->bind_param("si", $new_dim, $img['id']);
                     $stmt->execute();
                     $stmt->close();
-
-                    echo "{$display_new} (-{$saved_percent}% | Saved " . round($saved_bytes / 1024, 1) . " KB)\n";
                 } else {
                     $conn->query("UPDATE images SET status = 'error', dimension = 'MISSING', worker_id = NULL WHERE id = {$img['id']}");
                     echo "[IMG] File missing or empty for ID {$img['id']}\n";
@@ -240,7 +269,7 @@ while (true) {
                 // Keep the SATA disk happy
                 usleep(500000);
             } else {
-                echo "[*] System Idle. Waiting for tasks...\n";
+                // echo "[*] System Idle. Waiting for tasks...\n";
                 sleep(10);
             }
         }

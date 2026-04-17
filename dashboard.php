@@ -106,7 +106,7 @@ $usagePercentage = ($size / $diskFreeSpace) * 100;
 
 require 'class/assets.php';
 Assets::use('bootstrap', 'css');
-Assets::use('bootstrap', 'js');
+Assets::use('bootstrap_bundle', 'js');
 Assets::use('jquery', 'js');
 
 

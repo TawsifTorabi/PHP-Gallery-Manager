@@ -10,6 +10,9 @@ class Assets
             'css' => ['/vendor/bootstrap-5.3.8-dist/css/bootstrap.min.css'],
             'js'  => ['/vendor/bootstrap-5.3.8-dist/js/bootstrap.min.js']
         ],
+        'bootstrap_bundle' => [
+            'js'  => ['/vendor/bootstrap-5.3.8-dist/js/bootstrap.bundle.min.js']
+        ],
         'cropper' => [
             'css' => ['/vendor/cropper.js_1.5.12/css/cropper.min.css'],
             'js'  => ['/vendor/cropper.js_1.5.12/js/cropper.min.js']

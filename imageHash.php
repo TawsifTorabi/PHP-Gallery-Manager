@@ -1,25 +1,53 @@
 <?php
-// Function to generate an image hash
-function getImageHash($filePath) {
-    $img = imagecreatefromstring(file_get_contents($filePath));
-    $img = imagescale($img, 16, 16); // Resize to 16x16
-    imagefilter($img, IMG_FILTER_GRAYSCALE); // Convert to grayscale
+function getImageHash($filePath)
+{
+    if (!file_exists($filePath) || filesize($filePath) == 0) {
+        return null;
+    }
 
-    $average = 0;
+    $data = @file_get_contents($filePath);
+    if (!$data) {
+        return null;
+    }
+
+    $img = @imagecreatefromstring($data);
+
+    if (!$img) {
+        return null; // invalid image (SVG, HTML, corrupt, etc.)
+    }
+
+    $img = @imagescale($img, 16, 16);
+
+    if (!$img) {
+        return null;
+    }
+
+    @imagefilter($img, IMG_FILTER_GRAYSCALE);
+
     $pixels = [];
+    $sum = 0;
+
     for ($y = 0; $y < 16; $y++) {
         for ($x = 0; $x < 16; $x++) {
-            $gray = (imagecolorat($img, $x, $y) >> 16) & 0xFF; // Get grayscale value
+
+            $rgb = imagecolorat($img, $x, $y);
+
+            // correct grayscale extraction
+            $gray = ($rgb >> 16) & 0xFF;
+
             $pixels[] = $gray;
-            $average += $gray;
+            $sum += $gray;
         }
     }
 
-    $average /= 256; // Average pixel value (16x16 = 256 pixels)
+    $avg = $sum / 256;
+
     $hash = '';
-    foreach ($pixels as $pixel) {
-        $hash .= ($pixel >= $average) ? '1' : '0';
+    foreach ($pixels as $p) {
+        $hash .= ($p >= $avg) ? '1' : '0';
     }
+
+    imagedestroy($img);
 
     return $hash;
 }
