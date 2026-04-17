@@ -8,6 +8,7 @@ Assets::use('cropper', 'css');
 Assets::use('bootstrap', 'js');
 Assets::use('cropper', 'js');
 Assets::use('ckeditor', 'js');
+Assets::use('fontawesome', 'css');
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php');
@@ -134,7 +135,7 @@ if (!$gallery) {
 
                 <div class="input-group">
                     <input type="file" class="form-control" id="mediaInput" name="media[]" multiple accept="image/*,video/*">
-                    <button class="btn btn-outline-secondary" type="button" id="pasteBtn">📋 Paste from Clipboard</button>
+                    <button class="btn btn-primary" type="button" id="pasteBtn"><i class="fas fa-paste"></i></button>
                 </div>
 
                 <small class="text-muted">You can also use <strong>Ctrl + V</strong> anywhere on this page.</small>
@@ -641,24 +642,54 @@ if (!$gallery) {
 
 
 
+
+
         // --- NEW: Paste Button Handler ---
         document.getElementById('pasteBtn').addEventListener('click', async () => {
             try {
+                // Check if Clipboard API is supported
+                if (!navigator.clipboard || !navigator.clipboard.read) {
+                    alert("Clipboard API not supported. Use Ctrl+V instead.");
+                    return;
+                }
+
                 const items = await navigator.clipboard.read();
+
+                let pasted = false;
+
                 for (const item of items) {
                     for (const type of item.types) {
                         if (type.startsWith('image/')) {
                             const blob = await item.getType(type);
-                            const file = new File([blob], `pasted_${Date.now()}.png`, {
-                                type
-                            });
+
+                            const file = new File(
+                                [blob],
+                                `pasted_image_${Date.now()}.png`, {
+                                    type: blob.type
+                                }
+                            );
+
                             selectedFiles.push(file);
-                            syncInput();
+                            pasted = true;
                         }
                     }
                 }
+
+                if (pasted) {
+                    syncInput();
+                } else {
+                    alert("No image found in clipboard.");
+                }
+
             } catch (err) {
-                alert("Please allow clipboard permissions or use Ctrl+V.");
+                console.error(err);
+
+                // Better error handling
+                if (err.name === "NotAllowedError") {
+                    alert("Clipboard access denied. Please allow permissions.");
+                } else {
+                    alert("Failed to read clipboard. Try Ctrl+V instead.");
+                }
             }
         });
 

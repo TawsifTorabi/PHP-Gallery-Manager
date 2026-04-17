@@ -11,8 +11,8 @@ class Assets
             'js'  => ['/vendor/bootstrap-5.3.8-dist/js/bootstrap.min.js']
         ],
         'cropper' => [
-            'css' => ['/vendor/cropper.js_1.5.12/cropper.min.css'],
-            'js'  => ['/vendor/cropper.js_1.5.12/cropper.min.js']
+            'css' => ['/vendor/cropper.js_1.5.12/css/cropper.min.css'],
+            'js'  => ['/vendor/cropper.js_1.5.12/js/cropper.min.js']
         ],
         'ckeditor' => [
             'js'  => ['/vendor/ckeditor.js_36.0.1/ckeditor.js']
