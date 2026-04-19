@@ -1,13 +1,32 @@
 <?php
 // Define menu items in an associative array
 $menu_items = [
-  'dashboard.php' => 'Dashboard',
-  'merge_gallery_view.php' => 'Merge Galleries',
-  'gallery_form.php' => 'Create Gallery',
-  'full_scraper.php' => 'Web Scraper',
-  'logout.php' => 'Logout' // You can easily add more items here
+  [
+    'url' => 'dashboard.php',
+    'title' => 'Dashboard'
+  ],
+  [
+    'url' => 'merge_gallery_view.php',
+    'title' => 'Merge Galleries'
+  ],
+  [
+    'url' => 'gallery_form.php',
+    'title' => 'Create Gallery'
+  ],
+  [
+    'url' => 'full_scraper.php',
+    'title' => 'Web Scraper'
+  ],
+  [
+    'url' => 'http://192.168.0.243:8501',
+    'title' => 'AI Image App',
+    'target' => '_blank'
+  ],
+  [
+    'url' => 'logout.php',
+    'title' => 'Logout'
+  ]
 ];
-
 // Get the current file name to determine the active menu item
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
@@ -150,16 +169,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
-        <?php foreach ($menu_items as $file => $title) : ?>
+        <?php foreach ($menu_items as $item) :
+          $url = $item['url'];
+          $title = $item['title'];
+          $target = $item['target'] ?? '_self'; // default
+        ?>
           <li class="nav-item">
             <a
-              class="nav-link <?php echo ($current_page == $file) ? 'active' : ''; ?>"
-              href="<?php echo $file; ?>"
-              <?php if ($file === 'logout.php') echo 'onclick="return confirm(\'Are you sure you want to logout?\');"'; ?>>
+              target="<?php echo $target; ?>"
+              class="nav-link <?php echo ($current_page == basename($url)) ? 'active' : ''; ?>"
+              href="<?php echo $url; ?>"
+              <?php if ($url === 'logout.php') echo 'onclick="return confirm(\'Are you sure you want to logout?\');"'; ?>>
               <?php echo $title; ?>
             </a>
           </li>
-
         <?php endforeach; ?>
       </ul>
 

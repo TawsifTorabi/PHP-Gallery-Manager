@@ -557,6 +557,7 @@ Assets::use('bootstrap_bundle', 'js');
                                             <?php endif; ?>
                                             <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="fa fa-trash"></i> Delete</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="fa fa-pencil"></i> Edit</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); downloadMedia('<?php echo addslashes($media['file_name']); ?>', '<?php echo $media['file_type']; ?>')"><i class="fa fa-download"></i> Download</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -940,6 +941,9 @@ Assets::use('bootstrap_bundle', 'js');
             setInterval(pollProgress, 2000); // Poll every 5 seconds
 
 
+
+            // --- 5. GLIGHTBOX RE-INITIALIZATION FUNCTION ---
+
             window.GlightboxDefine = function() {
                 // 1. If an instance already exists, kill it to clear the internal URL cache
                 if (window.currentLightboxInstance) {
@@ -984,6 +988,72 @@ Assets::use('bootstrap_bundle', 'js');
 
             // Run it once on page load
             document.addEventListener("DOMContentLoaded", window.GlightboxDefine);
+
+
+            // --- 6. DOWNLOAD MEDIA FUNCTION ---
+            async function downloadMedia(fileName, fileType) {
+                // alert('Preparing download for: ' + fileName); // Debug alert
+                try {
+                    // Validate inputs
+                    if (!fileName || typeof fileName !== 'string') {
+                        throw new Error('Invalid file name');
+                    }
+
+                    if (!['image', 'video'].includes(fileType)) {
+                        throw new Error('Invalid file type');
+                    }
+
+                    // Build URL safely
+                    let url;
+                    if (fileType === 'image') {
+                        url = `serve_image.php?file=${encodeURIComponent(fileName)}&w=2000`;
+                    } else {
+                        url = `uploads/${encodeURIComponent(fileName)}`;
+                    }
+
+                    // Fetch file as blob (ensures proper download)
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Download failed: ${response.status}`);
+                    }
+
+                    const blob = await response.blob();
+
+                    // Create blob URL
+                    const blobUrl = window.URL.createObjectURL(blob);
+
+                    // Create temporary link
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = fileName;
+                    link.style.display = 'none';
+
+                    document.body.appendChild(link);
+                    link.click();
+
+                    // Cleanup
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(blobUrl);
+
+                } catch (error) {
+                    console.error('Download error:', error);
+
+                    // Optional: fallback (open in new tab)
+                    try {
+                        const fallbackUrl = fileType === 'image' ?
+                            `serve_image.php?file=${encodeURIComponent(fileName)}&w=2000` :
+                            `uploads/${encodeURIComponent(fileName)}`;
+
+                        window.open(fallbackUrl, '_blank');
+                    } catch (e) {
+                        alert('Unable to download file.');
+                    }
+                }
+            }
         </script>
 
 </body>

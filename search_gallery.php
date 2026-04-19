@@ -2,6 +2,7 @@
 include 'session.php';
 require 'db.php';
 
+
 if (!isset($_SESSION['user_id'])) {
     die("You must be logged in to search galleries.");
 }
@@ -32,6 +33,15 @@ $total_result = $total_stmt->get_result();
 $total_row = $total_result->fetch_assoc();
 $total_galleries = $total_row['total'];
 $total_pages = ceil($total_galleries / $records_per_page);
+
+
+require 'class/assets.php';
+
+Assets::use(['fontawesome', 'jquery', 'popper', 'glightbox']);
+Assets::use('bootstrap', 'css');
+Assets::use('bootstrap_bundle', 'js');
+Assets::use('popper', 'js');
+
 ?>
 
 
@@ -44,7 +54,7 @@ $total_pages = ceil($total_galleries / $records_per_page);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Results</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <?php Assets::renderCSS(); ?>
     <style>
         .hero-images {
             display: flex;
@@ -145,30 +155,77 @@ $total_pages = ceil($total_galleries / $records_per_page);
             $last_updated_formatted = $last_updated ? date('g:i A, jS F, Y', strtotime($last_updated)) : 'No updates yet';
             ?>
 
-            <div class="col-xl-9 col-sm-12 card mb-4">
-                <div class="card-body">
-                    <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>">
-                        <h5 class="card-title"><?php echo htmlspecialchars($gallery['title']); ?></h5>
-                    </a>
-                    <p class="card-text"><?php echo $gallery['description']; ?></p>
-                    <p class="text-muted">
-                        <?php echo $images_count; ?> Images, <?php echo $videos_count; ?> Videos | Last updated: <?php echo $last_updated_formatted; ?>
-                    </p>
+            <div class="col-xl-9 col-sm-12 mb-4">
+                <div class="card position-relative h-100">
 
-                    <!-- Display Hero Images -->
-                    <?php if (!empty($gallery['hero_images'])): ?>
-                        <div class="mb-2">
-                            <div class="hero-images">
-                                <?php
-                                $hero_images = explode('$%@!', $gallery['hero_images']);
-                                foreach ($hero_images as $image): ?>
-                                    <img src="serve_image.php?w=180&file=<?php echo rawurlencode($image); ?>" alt="Hero Image">
-                                <?php endforeach; ?>
-                            </div>
+                    <!-- FULL CARD CLICK -->
+                    <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>"
+                        class="stretched-link"></a>
+
+                    <div class="card-body d-flex justify-content-between align-items-start">
+
+                        <!-- LEFT CONTENT -->
+                        <div>
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($gallery['title']); ?>
+                            </h5>
+
+                            <p class="card-text"><?php echo $gallery['description']; ?></p>
+
+                            <p class="text-muted">
+                                <?php echo $images_count; ?> Images,
+                                <?php echo $videos_count; ?> Videos |
+                                Last updated: <?php echo $last_updated_formatted; ?>
+                            </p>
+
+                            <!-- Hero Images -->
+                            <?php if (!empty($gallery['hero_images'])): ?>
+                                <div class="mb-2 hero-images">
+                                    <?php
+                                    $hero_images = explode('$%@!', $gallery['hero_images']);
+                                    foreach ($hero_images as $image): ?>
+                                        <img src="serve_image.php?w=180&file=<?php echo rawurlencode($image); ?>">
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
-                    <?php endif; ?>
 
-                    <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>" class="btn btn-primary">View Gallery</a>
+                        <!-- RIGHT SIDE ICONS -->
+                        <div class="ms-3 d-flex flex-column gap-2 text-end position-relative" style="z-index: 2;">
+
+                            <a href="display_gallery.php?id=<?php echo $gallery['id']; ?>"
+                                class="btn btn-sm btn-primary"
+                                onclick="event.stopPropagation();">
+                                <i class="fas fa-eye"></i>
+                            </a>
+
+                            <a href="hero_images.php?id=<?php echo $gallery['id']; ?>"
+                                class="btn btn-sm btn-secondary"
+                                onclick="event.stopPropagation();">
+                                <i class="fas fa-images"></i>
+                            </a>
+
+                            <a href="update_gallery_form.php?id=<?php echo $gallery['id']; ?>"
+                                class="btn btn-sm btn-success"
+                                onclick="event.stopPropagation();">
+                                <i class="fas fa-upload"></i>
+                            </a>
+
+                            <a href="image_from_video.php?id=<?php echo $gallery['id']; ?>"
+                                class="btn btn-sm btn-info"
+                                onclick="event.stopPropagation();">
+                                <i class="fas fa-video"></i>
+                            </a>
+
+                            <a href="delete_gallery.php?gallery_id=<?php echo $gallery['id']; ?>"
+                                class="btn btn-sm btn-danger"
+                                onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this gallery?');">
+                                <i class="fas fa-trash"></i>
+                            </a>
+
+                        </div>
+
+                    </div>
                 </div>
             </div>
         <?php endwhile; ?>
@@ -210,8 +267,7 @@ $total_pages = ceil($total_galleries / $records_per_page);
     </div>
 
     <!-- Bootstrap JS and Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <?php Assets::renderJS(); ?>
 
 </body>
 
