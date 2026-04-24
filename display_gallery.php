@@ -555,9 +555,10 @@ Assets::use('bootstrap_bundle', 'js');
                                             <?php if ($media['file_type'] === 'video'): ?>
                                                 <li><a class="dropdown-item" href="generate_images.php?gallery_id=<?php echo $gallery['id']; ?>&video_file=<?php echo $media['file_name']; ?>"><i class="fa fa-image"></i> Generate Images</a></li>
                                             <?php endif; ?>
-                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="fa fa-trash"></i> Delete</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="fa fa-pencil"></i> Edit</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); downloadMedia('<?php echo addslashes($media['file_name']); ?>', '<?php echo $media['file_type']; ?>')"><i class="fa fa-download"></i> Download</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="event.stopPropagation(); deleteMedia(<?php echo $media['id']; ?>)"><i class="fa fa-trash"></i> Delete</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="event.stopPropagation(); openEditModal(<?php echo $media['id']; ?>)"><i class="fa fa-pencil"></i> Edit</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="event.stopPropagation(); downloadMedia('<?php echo addslashes($media['file_name']); ?>', '<?php echo $media['file_type']; ?>', 2000, 100)"><i class="fa fa-download"></i> Download High Quality</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="event.stopPropagation(); downloadMedia('<?php echo addslashes($media['file_name']); ?>', '<?php echo $media['file_type']; ?>', 500, 80)"><i class="fa fa-download"></i> Download Low Quality</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -991,7 +992,7 @@ Assets::use('bootstrap_bundle', 'js');
 
 
             // --- 6. DOWNLOAD MEDIA FUNCTION ---
-            async function downloadMedia(fileName, fileType) {
+            async function downloadMedia(fileName, fileType, size, quality) {
                 // alert('Preparing download for: ' + fileName); // Debug alert
                 try {
                     // Validate inputs
@@ -1006,7 +1007,8 @@ Assets::use('bootstrap_bundle', 'js');
                     // Build URL safely
                     let url;
                     if (fileType === 'image') {
-                        url = `serve_image.php?file=${encodeURIComponent(fileName)}&w=2000`;
+                        url = `serve_image.php?file=${encodeURIComponent(fileName)}&w=` + (size || 2000);
+                        // url = `serve_image.php?file=${encodeURIComponent(fileName)}&w=` + (size || 2000) + `&q=` + (quality || 80);
                     } else {
                         url = `uploads/${encodeURIComponent(fileName)}`;
                     }
