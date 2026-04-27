@@ -4,7 +4,7 @@ services:
   php-gallery-manager:
     container_name: php-gallery-manager
     # --- ADD THIS LINE ---
-    image: xceptionist/gallery-app:latest 
+    image: tawsiftorabi/gallery-app:latest 
     build: .
     ports:
       - "8080:80"
@@ -20,7 +20,7 @@ services:
   php-video-worker:
     container_name: php-video-worker
     # --- ADD THIS LINE ---
-    image: xceptionist/gallery-worker:latest
+    image: tawsiftorabi/gallery-worker:latest
     build: .
     command: php /var/www/html/worker.php 
     volumes:
