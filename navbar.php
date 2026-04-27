@@ -22,6 +22,13 @@ $menu_items = [
     'title' => 'AI Image App',
     'target' => '_blank'
   ],
+  
+  [
+    'url' => 'http://192.168.0.243:8081/login.php',
+    'title' => 'Facewapp Meme Generator',
+    'target' => '_blank'
+  ],
+  
   [
     'url' => 'logout.php',
     'title' => 'Logout'

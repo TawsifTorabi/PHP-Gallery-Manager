@@ -4,15 +4,21 @@
 // SESSION CONFIG (7 days)
 // ===============================
 ini_set('session.gc_maxlifetime', 604800);
+
+$host = explode(':', $_SERVER['HTTP_HOST'])[0];
+
 session_set_cookie_params([
     'lifetime' => 604800,
     'path' => '/',
-    'secure' => false, // true if HTTPS
+    'domain' => $host,   // dynamic
     'httponly' => true,
     'samesite' => 'Lax'
 ]);
 
+// session_start();
+
 if (session_status() === PHP_SESSION_NONE) {
+
     session_start();
 }
 
@@ -21,7 +27,8 @@ require_once __DIR__ . '/db.php';
 // ===============================
 // LOAD SESSION FROM DATABASE
 // ===============================
-function loadSessionFromDB($conn) {
+function loadSessionFromDB($conn)
+{
     $session_id = session_id();
 
     $stmt = $conn->prepare("SELECT payload, last_activity FROM app_sessions WHERE session_id = ?");
@@ -56,7 +63,8 @@ function loadSessionFromDB($conn) {
 // ===============================
 // UPDATE ACTIVITY
 // ===============================
-function updateSessionActivity($conn) {
+function updateSessionActivity($conn)
+{
     $session_id = session_id();
     $time = time();
 
@@ -68,7 +76,8 @@ function updateSessionActivity($conn) {
 // ===============================
 // DESTROY SESSION (GLOBAL LOGOUT)
 // ===============================
-function destroySession($conn) {
+function destroySession($conn)
+{
     $session_id = session_id();
 
     $stmt = $conn->prepare("DELETE FROM app_sessions WHERE session_id = ?");
@@ -88,8 +97,8 @@ loadSessionFromDB($conn);
 // PROTECT PAGE
 // ===============================
 if (!isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit();
+    // header('Location: index.php');
+    // exit();
 }
 
 
