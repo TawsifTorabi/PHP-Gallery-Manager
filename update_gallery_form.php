@@ -125,59 +125,59 @@ if (!$gallery) {
             <div class="card p-3 mb-3">
                 <label class="fw-bold mb-2">Media Management</label>
                 <div class="input-group mt-3">
-                    <input type="url" class="form-control" id="videoUrlInput" placeholder="Paste video URL (mp4, webm, etc.)">
-                    <button class="btn btn-outline-secondary" type="button" id="fetchVideoBtn">Fetch Video</button>
+                    <input type="url" class="form-control" id="videoUrlInput" placeholder="Paste image or video URL...">
+                    <button class="btn btn-outline-primary" type="button" id="fetchVideoBtn">Fetch Media</button>
                 </div>
-                <small class="text-muted">Note: Some sites block direct fetching due to security (CORS).</small>
                 <script>
                     document.getElementById('fetchVideoBtn').addEventListener('click', async () => {
                         const url = document.getElementById('videoUrlInput').value.trim();
                         const btn = document.getElementById('fetchVideoBtn');
 
                         if (!url) {
-                            alert("Please enter a valid URL.");
+                            alert("Please enter a URL.");
                             return;
                         }
 
                         try {
                             btn.disabled = true;
-                            btn.innerText = "Fetching...";
+                            btn.innerText = "Processing...";
 
+                            // Route through proxy to bypass CORS
                             const response = await fetch(`helper/proxy_fetch.php?url=${encodeURIComponent(url)}`);
-                            
-                            if (!response.ok) throw new Error("Failed to reach the video URL.");
+
+                            if (!response.ok) throw new Error("Failed to reach the media URL via proxy.");
 
                             const blob = await response.blob();
+                            const mimeType = blob.type;
 
-                            // Validate if it's actually a video
-                            if (!blob.type.startsWith('video/')) {
-                                alert("The provided URL does not appear to be a video file.");
-                                btn.disabled = false;
-                                btn.innerText = "Fetch Video";
+                            // Ensure it is a photo or a video
+                            if (!mimeType.startsWith('image/') && !mimeType.startsWith('video/')) {
+                                alert("The provided URL is not a supported image or video format.");
                                 return;
                             }
 
-                            // Generate a filename from the URL or timestamp
-                            const fileName = url.split('/').pop().split('#')[0].split('?')[0] || `remote_video_${Date.now()}.mp4`;
-                            
-                            const file = new File([blob], fileName, { type: blob.type });
+                            // Determine extension and name
+                            const extension = mimeType.split('/')[1].split('+')[0] || 'file';
+                            const fileName = `remote_media_${Date.now()}.${extension}`;
 
-                            // Push to your existing master list
+                            const file = new File([blob], fileName, {
+                                type: mimeType
+                            });
+
+                            // Push to your existing selectedFiles array
                             selectedFiles.push(file);
-                            
-                            // Refresh UI and hidden inputs
+
+                            // Refresh UI and hidden inputs (as per your update_gallery_form.php logic)
                             syncInput();
-                            
-                            // Clear input
+
                             document.getElementById('videoUrlInput').value = '';
-                            alert("Video captured successfully!");
 
                         } catch (err) {
                             console.error(err);
-                            alert("Could not fetch video. This is likely due to CORS restrictions on the host server.");
+                            alert("Could not capture media. Ensure the link is a direct file URL.");
                         } finally {
                             btn.disabled = false;
-                            btn.innerText = "Fetch Video";
+                            btn.innerText = "Fetch Media";
                         }
                     });
                 </script>
