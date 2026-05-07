@@ -124,6 +124,63 @@ if (!$gallery) {
 
             <div class="card p-3 mb-3">
                 <label class="fw-bold mb-2">Media Management</label>
+                <div class="input-group mt-3">
+                    <input type="url" class="form-control" id="videoUrlInput" placeholder="Paste video URL (mp4, webm, etc.)">
+                    <button class="btn btn-outline-secondary" type="button" id="fetchVideoBtn">Fetch Video</button>
+                </div>
+                <small class="text-muted">Note: Some sites block direct fetching due to security (CORS).</small>
+                <script>
+                    document.getElementById('fetchVideoBtn').addEventListener('click', async () => {
+                        const url = document.getElementById('videoUrlInput').value.trim();
+                        const btn = document.getElementById('fetchVideoBtn');
+
+                        if (!url) {
+                            alert("Please enter a valid URL.");
+                            return;
+                        }
+
+                        try {
+                            btn.disabled = true;
+                            btn.innerText = "Fetching...";
+
+                            const response = await fetch(`helper/proxy_fetch.php?url=${encodeURIComponent(url)}`);
+                            
+                            if (!response.ok) throw new Error("Failed to reach the video URL.");
+
+                            const blob = await response.blob();
+
+                            // Validate if it's actually a video
+                            if (!blob.type.startsWith('video/')) {
+                                alert("The provided URL does not appear to be a video file.");
+                                btn.disabled = false;
+                                btn.innerText = "Fetch Video";
+                                return;
+                            }
+
+                            // Generate a filename from the URL or timestamp
+                            const fileName = url.split('/').pop().split('#')[0].split('?')[0] || `remote_video_${Date.now()}.mp4`;
+                            
+                            const file = new File([blob], fileName, { type: blob.type });
+
+                            // Push to your existing master list
+                            selectedFiles.push(file);
+                            
+                            // Refresh UI and hidden inputs
+                            syncInput();
+                            
+                            // Clear input
+                            document.getElementById('videoUrlInput').value = '';
+                            alert("Video captured successfully!");
+
+                        } catch (err) {
+                            console.error(err);
+                            alert("Could not fetch video. This is likely due to CORS restrictions on the host server.");
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerText = "Fetch Video";
+                        }
+                    });
+                </script>
                 <div class="form-check form-switch mb-3">
                     <input class="form-check-input" type="checkbox" id="videoPreviewToggle" checked>
                     <label class="form-check-label" for="videoPreviewToggle">Enable Video Previews</label>
